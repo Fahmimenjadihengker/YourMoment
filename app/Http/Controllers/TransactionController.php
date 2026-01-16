@@ -87,4 +87,100 @@ class TransactionController extends Controller
             'filterType' => $filterType,
         ]);
     }
+
+    /**
+     * Show edit form for a transaction
+     */
+    public function edit(Transaction $transaction)
+    {
+        // Ensure user owns this transaction
+        if ($transaction->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $categories = Category::where('type', $transaction->type)->get();
+
+        return view('transactions.edit', [
+            'transaction' => $transaction,
+            'categories' => $categories,
+        ]);
+    }
+
+    /**
+     * Update transaction in database
+     */
+    public function update(Request $request, Transaction $transaction)
+    {
+        // Ensure user owns this transaction
+        if ($transaction->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'amount' => 'required|numeric|min:1',
+            'description' => 'nullable|string|max:255',
+            'transaction_date' => 'required|date',
+            'payment_method' => 'nullable|string|max:50',
+        ]);
+
+        $wallet = auth()->user()->walletSetting;
+        $oldAmount = $transaction->amount;
+        $newAmount = $validated['amount'];
+
+        // Reverse old transaction effect on balance
+        if ($transaction->type === 'income') {
+            $wallet->balance -= $oldAmount;
+        } else {
+            $wallet->balance += $oldAmount;
+        }
+
+        // Apply new amount
+        if ($transaction->type === 'income') {
+            $wallet->balance += $newAmount;
+        } else {
+            $wallet->balance -= $newAmount;
+        }
+
+        $wallet->save();
+
+        // Update transaction
+        $transaction->update($validated);
+
+        $type = $transaction->type;
+        $message = ucfirst($type) . ' updated successfully!';
+
+        return redirect()->route('transactions.index')
+            ->with('success', $message);
+    }
+
+    /**
+     * Delete transaction from database
+     */
+    public function destroy(Transaction $transaction)
+    {
+        // Ensure user owns this transaction
+        if ($transaction->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $wallet = auth()->user()->walletSetting;
+
+        // Reverse transaction effect on balance
+        if ($transaction->type === 'income') {
+            $wallet->balance -= $transaction->amount;
+        } else {
+            $wallet->balance += $transaction->amount;
+        }
+
+        $wallet->save();
+
+        $type = $transaction->type;
+        $transaction->delete();
+
+        $message = ucfirst($type) . ' deleted successfully!';
+
+        return redirect()->route('transactions.index')
+            ->with('success', $message);
+    }
 }

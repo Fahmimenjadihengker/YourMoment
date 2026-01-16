@@ -5,8 +5,12 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center gap-2">
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-                        <span class="text-2xl font-bold text-emerald-600">💚</span>
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2 hover:opacity-80 transition">
+                        @if(file_exists(public_path('images/logo_yourmoment.png')))
+                            <img src="{{ asset('images/logo_yourmoment.png') }}" alt="YourMoment" class="h-10 w-auto">
+                        @else
+                            <span class="text-2xl font-bold text-emerald-600">💚</span>
+                        @endif
                         <span class="font-bold text-slate-900 hidden sm:inline">YourMoment</span>
                     </a>
                 </div>

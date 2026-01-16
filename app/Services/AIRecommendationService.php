@@ -1,0 +1,564 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Transaction;
+use App\Models\WalletSetting;
+use App\Models\Category;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
+use App\Services\SpendingPatternAnalyzer;
+
+class AIRecommendationService
+{
+    /**
+     * Standar ideal persentase pengeluaran per kategori
+     */
+    protected array $idealPercentages = [
+        'Makan' => ['min' => 40, 'max' => 50],
+        'Transport' => ['min' => 10, 'max' => 20],
+        'Nongkrong' => ['min' => 10, 'max' => 20],
+        'Akademik' => ['min' => 5, 'max' => 10],
+        'Lainnya' => ['min' => 0, 'max' => 10],
+    ];
+
+    /**
+     * Generate rekomendasi AI berdasarkan data keuangan user
+     */
+    public function generateRecommendation(int $userId): array
+    {
+        // Ambil wallet settings (atau buat default jika belum ada)
+        $walletSetting = WalletSetting::firstOrCreate(
+            ['user_id' => $userId],
+            [
+                'balance' => 0,
+                'monthly_allowance' => null,
+                'weekly_allowance' => null,
+                'financial_goal' => null,
+                'notes' => null,
+            ]
+        );
+
+        // Hitung periode 7 hari terakhir
+        $endDate = Carbon::now();
+        $startDate = Carbon::now()->subDays(7);
+
+        // Ambil total pengeluaran 7 hari terakhir
+        $totalExpense = $this->getTotalExpense($userId, $startDate, $endDate);
+
+        // Ambil semua transaksi expense (untuk analisis notes)
+        $expenseTransactions = $this->getExpenseTransactions($userId, $startDate, $endDate);
+
+        // Ambil breakdown per kategori
+        $categoryBreakdown = $this->getCategoryBreakdown($userId, $startDate, $endDate);
+
+        // Hitung persentase per kategori
+        $categoryPercentages = $this->calculatePercentages($categoryBreakdown, $totalExpense);
+
+        // Analisis dan generate rekomendasi
+        $analysis = $this->analyzeSpending($categoryPercentages, $walletSetting);
+
+        // Generate teks rekomendasi (pass transactions untuk pattern analysis)
+        $recommendation = $this->generateRecommendationText($analysis, $walletSetting, $totalExpense, $expenseTransactions);
+
+        return [
+            'wallet_setting' => $walletSetting,
+            'total_expense_7_days' => $totalExpense,
+            'category_breakdown' => $categoryBreakdown,
+            'category_percentages' => $categoryPercentages,
+            'analysis' => $analysis,
+            'recommendation' => $recommendation,
+            'period' => [
+                'start' => $startDate->format('d M Y'),
+                'end' => $endDate->format('d M Y'),
+            ],
+        ];
+    }
+
+    /**
+     * Ambil total pengeluaran dalam periode tertentu
+     */
+    protected function getTotalExpense(int $userId, Carbon $startDate, Carbon $endDate): float
+    {
+        return Transaction::forUser($userId)
+            ->expense()
+            ->dateRange($startDate, $endDate)
+            ->sum('amount');
+    }
+
+    /**
+     * Ambil breakdown pengeluaran per kategori
+     */
+    protected function getCategoryBreakdown(int $userId, Carbon $startDate, Carbon $endDate): Collection
+    {
+        return Transaction::forUser($userId)
+            ->expense()
+            ->dateRange($startDate, $endDate)
+            ->with('category')
+            ->get()
+            ->groupBy('category.name')
+            ->map(function ($transactions, $categoryName) {
+                $category = $transactions->first()->category;
+                return [
+                    'name' => $categoryName,
+                    'icon' => $category->icon ?? '📌',
+                    'color' => $category->color ?? '#6b7280',
+                    'total' => $transactions->sum('amount'),
+                    'count' => $transactions->count(),
+                    'transactions' => $transactions, // Include transactions for note analysis
+                ];
+            });
+    }
+
+    /**
+     * Ambil semua transaksi expense dalam periode
+     */
+    protected function getExpenseTransactions(int $userId, Carbon $startDate, Carbon $endDate): Collection
+    {
+        return Transaction::forUser($userId)
+            ->expense()
+            ->dateRange($startDate, $endDate)
+            ->with('category')
+            ->get();
+    }
+
+    /**
+     * Hitung persentase pengeluaran per kategori
+     */
+    protected function calculatePercentages(Collection $breakdown, float $totalExpense): Collection
+    {
+        if ($totalExpense <= 0) {
+            return collect();
+        }
+
+        return $breakdown->map(function ($category) use ($totalExpense) {
+            $percentage = ($category['total'] / $totalExpense) * 100;
+            return array_merge($category, [
+                'percentage' => round($percentage, 1),
+            ]);
+        })->sortByDesc('percentage');
+    }
+
+    /**
+     * Analisis spending dibandingkan dengan standar ideal
+     */
+    protected function analyzeSpending(Collection $percentages, ?WalletSetting $walletSetting): array
+    {
+        $analysis = [
+            'overspending' => [],
+            'underspending' => [],
+            'on_track' => [],
+            'insights' => [],
+        ];
+
+        foreach ($percentages as $categoryName => $data) {
+            $ideal = $this->idealPercentages[$categoryName] ?? ['min' => 0, 'max' => 15];
+            $percentage = $data['percentage'];
+
+            if ($percentage > $ideal['max']) {
+                $analysis['overspending'][] = [
+                    'category' => $categoryName,
+                    'icon' => $data['icon'],
+                    'percentage' => $percentage,
+                    'ideal_max' => $ideal['max'],
+                    'excess' => round($percentage - $ideal['max'], 1),
+                ];
+            } elseif ($percentage < $ideal['min']) {
+                $analysis['underspending'][] = [
+                    'category' => $categoryName,
+                    'icon' => $data['icon'],
+                    'percentage' => $percentage,
+                    'ideal_min' => $ideal['min'],
+                ];
+            } else {
+                $analysis['on_track'][] = [
+                    'category' => $categoryName,
+                    'icon' => $data['icon'],
+                    'percentage' => $percentage,
+                ];
+            }
+        }
+
+        // Tambahan insight berdasarkan wallet setting
+        if ($walletSetting) {
+            if ($walletSetting->financial_goal > 0) {
+                $analysis['has_goal'] = true;
+                $analysis['goal_amount'] = $walletSetting->financial_goal;
+            }
+
+            if ($walletSetting->weekly_allowance > 0) {
+                $analysis['has_weekly_budget'] = true;
+                $analysis['weekly_budget'] = $walletSetting->weekly_allowance;
+            }
+        }
+
+        return $analysis;
+    }
+
+    /**
+     * Generate teks rekomendasi yang santai dan supportive
+     */
+    protected function generateRecommendationText(array $analysis, ?WalletSetting $walletSetting, float $totalExpense, ?Collection $transactions = null): string
+    {
+        $recommendations = [];
+
+        // Jika tidak ada pengeluaran
+        if ($totalExpense <= 0) {
+            return $this->getNoExpenseMessage();
+        }
+
+        // Opening yang personal
+        $recommendations[] = $this->getOpeningMessage($totalExpense);
+
+        // Analyze spending patterns untuk rekomendasi kontekstual
+        $analyzer = new SpendingPatternAnalyzer(
+            $totalExpense,
+            $walletSetting->monthly_allowance ?? $walletSetting->weekly_allowance ?? 0,
+            $walletSetting->monthly_allowance ? 'monthly' : 'weekly',
+            $this->categoryBreakdown ?? collect(),
+            $walletSetting->balance ?? 0,
+            $walletSetting->financial_goal ?? 0,
+            $transactions // Pass transactions for note analysis
+        );
+
+        $patterns = $analyzer->analyze();
+        
+        // Generate pattern-based recommendations
+        $patternRecommendations = $this->generatePatternBasedRecommendations($analyzer, $analysis);
+        $recommendations = array_merge($recommendations, $patternRecommendations);
+
+        // Savings goal message
+        if ($walletSetting && $walletSetting->financial_goal > 0) {
+            $recommendations[] = $this->getSavingsGoalMessage($walletSetting->financial_goal, $walletSetting->balance ?? 0);
+        }
+
+        // Closing yang motivating
+        $recommendations[] = $this->getClosingMessage();
+
+        return implode("\n\n", array_filter($recommendations));
+    }
+
+    /**
+     * Generate pattern-based recommendations
+     */
+    private function generatePatternBasedRecommendations(SpendingPatternAnalyzer $analyzer, array $analysis): array
+    {
+        $recommendations = [];
+
+        // High food spending patterns
+        if ($analyzer->hasPattern('highFoodSpending')) {
+            if ($analyzer->hasPattern('frequentOnlineFood')) {
+                $recommendations[] = $this->getFrequentOnlineFoodMessage();
+            } else {
+                $recommendations[] = $this->getHighFoodSpendingMessage();
+            }
+        } elseif ($analyzer->hasPattern('moderateFoodSpending')) {
+            $recommendations[] = $this->getBalancedFoodSpendingMessage();
+        }
+
+        // Hangout patterns
+        if ($analyzer->hasPattern('highHangout')) {
+            $recommendations[] = $this->getHighHangoutMessage();
+        } elseif ($analyzer->hasPattern('moderateHangout')) {
+            $recommendations[] = $this->getBalancedHangoutMessage();
+        }
+
+        // Transport patterns
+        if ($analyzer->hasPattern('heavyTransport')) {
+            $recommendations[] = $this->getHeavyTransportMessage();
+        } elseif ($analyzer->hasPattern('moderateTransport')) {
+            $recommendations[] = $this->getBalancedTransportMessage();
+        }
+
+        // Budget overspending
+        if ($analyzer->hasPattern('isOverspentWeekly') || $analyzer->hasPattern('isOverspentMonthly')) {
+            $recommendations[] = $this->getOverspentMessage();
+        }
+
+        // Savings progress
+        if ($analyzer->hasPattern('nearGoal')) {
+            $recommendations[] = $this->getNearGoalMessage();
+        } elseif ($analyzer->hasPattern('lowSavingsProgress')) {
+            $recommendations[] = $this->getLowSavingsProgressMessage();
+        }
+
+        // If on track and good progress
+        if ($analyzer->hasPattern('onTrack')) {
+            $recommendations[] = $this->getOnTrackFullMessage();
+        }
+
+        return $recommendations;
+    }
+
+    /**
+     * Store categoryBreakdown for pattern analysis
+     */
+    private $categoryBreakdown = null;
+
+    /**
+     * Pesan jika tidak ada pengeluaran
+     */
+    protected function getNoExpenseMessage(): string
+    {
+        $messages = [
+            "Belum ada pengeluaran minggu ini. Parah banget atau memang disimpan semua? 😄",
+            "Wow, pengeluaran Anda 0? Jadi Anda menabung 100% minggu ini! Keren 💪",
+            "Tidak ada transaksi minggu ini. Keep it up atau ada transaksi yang lupa dicatat? 📝",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Opening message berdasarkan total pengeluaran
+     */
+    protected function getOpeningMessage(float $totalExpense): string
+    {
+        $formatted = 'Rp ' . number_format($totalExpense, 0, ',', '.');
+
+        $messages = [
+            "Hai! 👋 Minggu ini total pengeluaranmu sekitar {$formatted}. Yuk kita lihat breakdown-nya:",
+            "Halo! 🌟 Dalam 7 hari terakhir, kamu sudah mengeluarkan {$formatted}. Ini analisisku:",
+            "Hey there! ✨ Pengeluaranmu minggu ini mencapai {$formatted}. Ini insight dariku:",
+        ];
+
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk frequent online food order (Shopee/GoFood/GrabFood detected)
+     */
+    protected function getFrequentOnlineFoodMessage(): string
+    {
+        $messages = [
+            "🍜 Kamu sering pesan makan online minggu ini. Ongkirnya lumayan lho. Coba sesekali beli langsung ke warung atau masak sederhana sendiri.",
+            "📱 Banyak order GoFood/GrabFood/ShopeeFood ya? Ongkir + biaya layanan itu numpuk lho. Sesekali jalan ke warung bisa lebih hemat.",
+            "🛍️ Online food memang praktis, tapi ongkirnya bikin budget makan membengkak. Coba kurangi 2-3 order per minggu?",
+            "🍕 Keseringan pesan makanan online nih. Coba hitung: ongkir Rp10rb x 5 = Rp50rb/minggu. Lumayan kan buat ditabung?",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk high food spending tanpa online delivery
+     */
+    protected function getHighFoodSpendingMessage(): string
+    {
+        $messages = [
+            "🍱 Pengeluaran makan cukup besar minggu ini. Mungkin bisa coba meal prep agar lebih hemat.",
+            "🍽️ Budget makan tinggi nih. Coba deh masak sendiri di weekend, simpan untuk makan siang weekday.",
+            "🥘 Makan emang kebutuhan pokok, tapi kalau >50% dari total pengeluaran, coba cari alternatif lebih hemat.",
+            "🍲 Porsi makan lumayan besar di budget. Tips: bawa bekal dari rumah bisa hemat sampai 50%.",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk balanced food spending
+     */
+    protected function getBalancedFoodSpendingMessage(): string
+    {
+        $messages = [
+            "✅ Pengeluaran makan kamu seimbang. Terusin aja pola makan ini!",
+            "👍 Budget untuk makanan terlihat sehat. Good job mempertahankan balance.",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk high hangout spending (>20%)
+     */
+    protected function getHighHangoutMessage(): string
+    {
+        $messages = [
+            "☕ Nongkrong itu seru, tapi terlalu sering di cafe bikin budget cepat habis. Sesekali hangout di kos atau taman bisa lebih hemat.",
+            "🎉 Seru sih main sama temen, tapi pengeluaran nongkrong udah >20% nih. Coba alternatif gratis kayak piknik atau main di rumah.",
+            "🎮 Hangout budget lumayan besar. Tips: gantian tempat nongkrong, ga harus selalu di cafe mahal.",
+            "☕ Cafe hopping emang asik, tapi dompet bisa nangis. Sekali-kali ngopi di rumah temen juga seru kok!",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk balanced hangout spending
+     */
+    protected function getBalancedHangoutMessage(): string
+    {
+        $messages = [
+            "✅ Hangoutan kamu reasonable. Balance antara fun dan saving bagus!",
+            "👍 Tidak terlalu banyak keluar, tapi juga jangan terlalu kekang diri. Good balance!",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk heavy transport spending (>20%)
+     */
+    protected function getHeavyTransportMessage(): string
+    {
+        $messages = [
+            "🚌 Biaya transport cukup tinggi. Kalau jarak dekat, coba jalan kaki atau sepeda. Lebih sehat juga!",
+            "🚲 Transport >20% dari pengeluaran nih. Coba kombinasi: ojol untuk jarak jauh, jalan kaki untuk dekat.",
+            "🚗 Ongkos perjalanan lumayan besar. Tips: cari promo ojol atau nebeng bareng temen.",
+            "🛵 Budget transport tinggi. Kalau memungkinkan, naik angkot/busway bisa hemat sampai 50%.",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk balanced transport spending
+     */
+    protected function getBalancedTransportMessage(): string
+    {
+        $messages = [
+            "✅ Biaya transport sehat dan efisien.",
+            "👍 Transport dalam range ideal.",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk overspending weekly/monthly budget
+     */
+    protected function getOverspentMessage(): string
+    {
+        $messages = [
+            "⚠️ Pengeluaranmu minggu ini melewati uang jajan mingguan. Hati-hati agar target tabungan tetap aman.",
+            "🚨 Budget minggu ini udah jebol nih. Minggu depan coba lebih ketat ya biar tabungan ga terganggu.",
+            "💸 Ups, pengeluaran melebihi budget! Evaluasi mana yang bisa dikurangi supaya saving plan tetap jalan.",
+            "⚠️ Over budget minggu ini. Ga apa-apa, yang penting evaluasi dan lebih disiplin minggu depan!",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk near goal (balance >= 80% of goal)
+     */
+    protected function getNearGoalMessage(): string
+    {
+        $messages = [
+            "🎯 Tabunganmu sudah hampir mencapai target! Tinggal sedikit lagi, pertahankan konsistensi.",
+            "🚀 Wow, tabungan udah 80%+ dari target! Sedikit lagi sampai, jangan kendor sekarang!",
+            "⭐ Almost there! Tinggal sprint akhir menuju goal. Semangat, kamu pasti bisa! 💪",
+            "🌟 Target tabungan di depan mata! Konsisten aja, dalam waktu dekat pasti tercapai.",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk low savings progress (<20% of goal)
+     */
+    protected function getLowSavingsProgressMessage(): string
+    {
+        $messages = [
+            "🌱 Tabungan masih kecil dibanding target. Coba sisihkan sedikit setiap kali ada pemasukan.",
+            "💰 Progress tabungan baru di awal. Tips: sisihkan 10-20% dari uang jajan langsung pas terima.",
+            "🌱 Masih jauh dari target, tapi santai aja. Yang penting konsisten nabung tiap minggu.",
+            "📈 Tabungan masih <20% dari goal. Yuk, challenge diri sendiri untuk lebih disiplin!",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Message untuk on track (semuanya bagus)
+     */
+    protected function getOnTrackFullMessage(): string
+    {
+        $messages = [
+            "✨ Kamu on track! Pengeluaran terkontrol dan tabungan berjalan lancar. Maintain aja! 🎉",
+            "🎊 Sip! Finansialmu sehat dan sesuai budget. Terusin pola ini ya! 👏",
+        ];
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Pesan terkait savings goal
+     */
+    protected function getSavingsGoalMessage(float $goalAmount, float $currentBalance): string
+    {
+        $formattedGoal = 'Rp ' . number_format($goalAmount, 0, ',', '.');
+        $formattedBalance = 'Rp ' . number_format($currentBalance, 0, ',', '.');
+        $percentage = $goalAmount > 0 ? round(($currentBalance / $goalAmount) * 100, 1) : 0;
+
+        if ($percentage >= 100) {
+            return "🎉 WOW! Kamu sudah mencapai target tabungan {$formattedGoal}! Saatnya set goal baru yang lebih tinggi!";
+        } elseif ($percentage >= 75) {
+            return "🔥 Amazing! Kamu sudah di {$percentage}% dari target {$formattedGoal}. Tinggal sedikit lagi!";
+        } elseif ($percentage >= 50) {
+            return "💪 Halfway there! Tabunganmu sudah {$formattedBalance} dari target {$formattedGoal}. Terus semangat!";
+        } elseif ($percentage >= 25) {
+            return "🌱 Progress bagus! Sudah {$percentage}% menuju {$formattedGoal}. Konsistensi adalah kunci!";
+        } else {
+            return "🎯 Target tabunganmu {$formattedGoal}. Yuk mulai sisihkan sedikit demi sedikit, pasti bisa!";
+        }
+    }
+
+    /**
+     * Closing message yang motivating
+     */
+    protected function getClosingMessage(): string
+    {
+        $messages = [
+            "💡 Ingat, financial wellness itu journey, bukan destination. Small steps matter!",
+            "🌈 Yang penting progress, bukan perfection. Kamu sudah di jalur yang benar!",
+            "💚 Setiap keputusan kecil hari ini membentuk masa depan finansialmu. You got this!",
+            "✨ Tracking keuangan secara rutin itu langkah pertama yang luar biasa. Proud of you!",
+            "🚀 Keep going! Awareness adalah step pertama menuju financial freedom.",
+        ];
+
+        return $messages[array_rand($messages)];
+    }
+
+    /**
+     * Generate recommendation menggunakan OpenAI (jika API key tersedia)
+     * Untuk implementasi masa depan
+     */
+    public function generateWithOpenAI(array $data): ?string
+    {
+        $apiKey = config('services.openai.api_key');
+
+        if (empty($apiKey)) {
+            return null; // Fallback ke rule-based
+        }
+
+        // TODO: Implementasi OpenAI API call
+        // Prompt template untuk OpenAI:
+        $prompt = $this->buildOpenAIPrompt($data);
+
+        // Return null untuk saat ini, gunakan rule-based
+        return null;
+    }
+
+    /**
+     * Build prompt untuk OpenAI
+     */
+    protected function buildOpenAIPrompt(array $data): string
+    {
+        $breakdown = '';
+        foreach ($data['category_percentages'] as $category => $info) {
+            $breakdown .= "- {$category}: {$info['percentage']}% (Rp " . number_format($info['total'], 0, ',', '.') . ")\n";
+        }
+
+        return <<<PROMPT
+Kamu adalah financial advisor yang friendly untuk mahasiswa/anak muda Indonesia.
+Berikan rekomendasi keuangan yang santai dan supportive (tidak menggurui) berdasarkan data berikut:
+
+Total Pengeluaran 7 Hari: Rp {$data['total_expense_7_days']}
+
+Breakdown per Kategori:
+{$breakdown}
+
+Standar ideal:
+- Makan: 40-50%
+- Transport: 10-20%
+- Nongkrong/Hiburan: 10-20%
+- Akademik: 5-10%
+- Sisanya untuk tabungan
+
+Target tabungan user: Rp {$data['wallet_setting']->financial_goal}
+Balance saat ini: Rp {$data['wallet_setting']->balance}
+
+Berikan rekomendasi dalam bahasa Indonesia yang casual, maksimal 3-4 paragraf pendek.
+Tone: supportive, tidak judgmental, actionable.
+PROMPT;
+    }
+}
