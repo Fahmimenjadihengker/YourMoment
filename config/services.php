@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | OpenAI API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | API key untuk fitur AI Financial Insight.
+    | Jika tidak tersedia, sistem akan menggunakan fallback rule-based.
+    |
+    */
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+    ],
+
 ];

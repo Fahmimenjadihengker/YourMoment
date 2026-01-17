@@ -69,4 +69,18 @@ class Transaction extends Model
     {
         return $query->whereBetween('transaction_date', [$startDate, $endDate]);
     }
+
+    /**
+     * Scope untuk optimized summary query (income + expense dalam satu query)
+     * Gunakan ini untuk dashboard queries
+     */
+    public function scopeSummary($query, $userId, $startDate, $endDate)
+    {
+        return $query->where('user_id', $userId)
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->selectRaw('
+                SUM(CASE WHEN type = "income" THEN amount ELSE 0 END) as total_income,
+                SUM(CASE WHEN type = "expense" THEN amount ELSE 0 END) as total_expense
+            ');
+    }
 }

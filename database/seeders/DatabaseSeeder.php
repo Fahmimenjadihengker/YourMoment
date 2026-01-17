@@ -37,5 +37,8 @@ class DatabaseSeeder extends Seeder
 
         // Seed categories
         $this->call(CategorySeeder::class);
+
+        // Seed demo user with realistic transaction data
+        $this->call(DemoUserSeeder::class);
     }
 }

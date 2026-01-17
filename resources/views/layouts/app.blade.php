@@ -1,46 +1,350 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" 
+      x-data="themeManager()" 
+      :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" :content="darkMode ? '#1e293b' : '#10b981'">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'YourMoment') }}</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
 
-        <!-- PWA Configuration -->
-        @PwaHead
+    <!-- Prevent flash of wrong theme + Theme Manager -->
+    <script>
+        (function() {
+            const stored = localStorage.getItem('theme');
+            if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+        
+        // Theme Manager - must be defined before Alpine starts
+        window.themeManager = function() {
+            return {
+                darkMode: localStorage.getItem('theme') === 'dark' || 
+                         (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
+                sidebarOpen: true,
+                
+                init() {
+                    // Watch for changes and persist
+                    this.$watch('darkMode', (val) => {
+                        localStorage.setItem('theme', val ? 'dark' : 'light');
+                        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', val ? '#1e293b' : '#10b981');
+                    });
+                }
+            }
+        }
+    </script>
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans antialiased bg-slate-50">
-        <div class="min-h-screen flex flex-col">
-            @include('layouts.navigation')
+    <!-- PWA Configuration -->
+    @PwaHead
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-gradient-to-r from-white via-slate-50 to-white border-b-2 border-slate-200 ring-1 ring-black/5">
-                    <div class="max-w-6xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
+    <!-- Scripts -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        /* Design System Variables */
+        :root {
+            --color-primary: #10b981;
+            --color-primary-dark: #059669;
+            --color-secondary: #6366f1;
+            --color-danger: #ef4444;
+            --color-warning: #f59e0b;
+            --color-success: #22c55e;
+            --sidebar-width: 260px;
+            --header-height: 64px;
+        }
+        
+        /* Smooth scrolling */
+        html { scroll-behavior: smooth; }
+        
+        /* Custom scrollbar for desktop */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-track { background: #1e293b; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        
+        /* Mobile touch optimization */
+        @media (max-width: 1023px) {
+            body { overscroll-behavior-y: contain; }
+        }
+        
+        /* Navigation links - ensure immediate response */
+        nav a, aside a {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+        }
+        
+        /* Safe area for mobile */
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
+        .pb-safe { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0)); }
+        
+        /* Sidebar transition */
+        .sidebar-transition { transition: width 0.2s ease, margin-left 0.2s ease; }
+        
+        /* Page animation */
+        .page-enter { animation: fadeInUp 0.25s ease-out; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-slate-100 dark:bg-slate-900">
+    <div class="min-h-screen flex">
+        
+        <!-- ==================== DESKTOP SIDEBAR ==================== -->
+        <aside class="hidden lg:flex lg:flex-col fixed inset-y-0 left-0 z-40 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-sm sidebar-transition"
+               :class="sidebarOpen ? 'w-[260px]' : 'w-[72px]'">
+            
+            <!-- Logo -->
+            <div class="h-16 flex items-center px-4 border-b border-slate-200 dark:border-slate-700">
+                <a href="{{ route('dashboard') }}" class="flex items-center gap-3 overflow-hidden">
+                    @if(file_exists(public_path('images/logo_yourmoment.png')))
+                        <img src="{{ asset('images/logo_yourmoment.png') }}" alt="YourMoment" class="h-9 w-auto flex-shrink-0">
+                    @else
+                        <div class="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <span class="text-white text-lg font-bold">Y</span>
+                        </div>
+                    @endif
+                    <span class="font-bold text-slate-900 dark:text-white text-lg whitespace-nowrap" x-show="sidebarOpen" x-cloak>YourMoment</span>
+                </a>
+            </div>
+            
+            <!-- Navigation Links -->
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                @php
+                    $navItems = [
+                        ['route' => 'dashboard', 'icon' => '📊', 'label' => 'Dashboard', 'match' => 'dashboard'],
+                        ['route' => 'transactions.index', 'icon' => '💳', 'label' => 'Transaksi', 'match' => 'transactions.*'],
+                        ['route' => 'savings.index', 'icon' => '🎯', 'label' => 'Target Tabungan', 'match' => 'savings.*'],
+                        ['route' => 'ai.chat', 'icon' => '🤖', 'label' => 'AI Assistant', 'match' => 'ai.*'],
+                        ['route' => 'ai-recommendation', 'icon' => '📈', 'label' => 'Analisis Keuangan', 'match' => 'ai-recommendation'],
+                    ];
+                @endphp
+                
+                <p class="px-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2" x-show="sidebarOpen" x-cloak>Menu Utama</p>
+                
+                @foreach($navItems as $item)
+                    @if(Route::has($item['route']))
+                        <a href="{{ route($item['route']) }}" 
+                           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                                  {{ request()->routeIs($item['match']) 
+                                      ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 shadow-sm' 
+                                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
+                           :class="!sidebarOpen && 'justify-center'"
+                           :title="!sidebarOpen && '{{ $item['label'] }}'">
+                            <span class="text-xl flex-shrink-0">{{ $item['icon'] }}</span>
+                            <span x-show="sidebarOpen" x-cloak class="whitespace-nowrap">{{ $item['label'] }}</span>
+                        </a>
+                    @endif
+                @endforeach
+                
+                <div class="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                    <p class="px-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2" x-show="sidebarOpen" x-cloak>Pengaturan</p>
+                    
+                    <a href="{{ route('profile.edit') }}" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                              {{ request()->routeIs('profile.*') 
+                                  ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 shadow-sm' 
+                                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
+                       :class="!sidebarOpen && 'justify-center'"
+                       :title="!sidebarOpen && 'Profil & Pengaturan'">
+                        <span class="text-xl flex-shrink-0">⚙️</span>
+                        <span x-show="sidebarOpen" x-cloak class="whitespace-nowrap">Profil & Pengaturan</span>
+                    </a>
+                </div>
+            </nav>
+            
+            <!-- User Section -->
+            <div class="p-3 border-t border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-3 px-3 py-2" :class="!sidebarOpen && 'justify-center'">
+                    <div class="w-9 h-9 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                        {{ substr(Auth::user()->name ?? 'U', 0, 1) }}
                     </div>
-                </header>
-            @endisset
+                    <div x-show="sidebarOpen" x-cloak class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ Auth::user()->name }}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ Auth::user()->email }}</p>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ route('logout') }}" class="mt-2" x-show="sidebarOpen" x-cloak>
+                    @csrf
+                    <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                        <span class="text-xl">🚪</span>
+                        <span>Keluar</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
 
-            <!-- Page Content with Layered Sections -->
-            <main class="flex-1 py-8 px-4 sm:px-6 lg:px-8">
-                <div class="max-w-6xl mx-auto">
-                    {{ $slot }}
+        <!-- ==================== MAIN CONTENT AREA ==================== -->
+        <div class="flex-1 flex flex-col sidebar-transition" :class="sidebarOpen ? 'lg:ml-[260px]' : 'lg:ml-[72px]'">
+            
+            <!-- Desktop Top Bar -->
+            <header class="hidden lg:flex h-16 items-center justify-between px-6 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30">
+                <div class="flex items-center gap-4">
+                    <!-- Sidebar Toggle -->
+                    <button @click="sidebarOpen = !sidebarOpen" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Page Title from header slot -->
+                    @isset($header)
+                        <div class="text-slate-900 dark:text-white font-semibold">{{ $header }}</div>
+                    @endisset
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Dark Mode Toggle -->
+                    <button @click="darkMode = !darkMode" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Toggle Dark Mode">
+                        <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                        <svg x-show="darkMode" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Quick Add Transaction -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span>Transaksi</span>
+                        </button>
+                        
+                        <div x-show="open" @click.away="open = false" x-transition
+                             class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-2 z-50">
+                            <a href="{{ route('transactions.create-income') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                <span class="text-lg">📥</span> Pemasukan
+                            </a>
+                            <a href="{{ route('transactions.create-expense') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                <span class="text-lg">📤</span> Pengeluaran
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Mobile Header -->
+            <header class="lg:hidden sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
+                        @if(file_exists(public_path('images/logo_yourmoment.png')))
+                            <img src="{{ asset('images/logo_yourmoment.png') }}" alt="YourMoment" class="h-8 w-auto">
+                        @else
+                            <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                                <span class="text-white font-bold">Y</span>
+                            </div>
+                        @endif
+                        <span class="font-bold text-slate-900 dark:text-white">YourMoment</span>
+                    </a>
+                    
+                    <div class="flex items-center gap-2">
+                        <button @click="darkMode = !darkMode" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700">
+                            <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                            </svg>
+                            <svg x-show="darkMode" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="flex-1 p-4 lg:p-6 xl:p-8 pb-safe lg:pb-8 page-enter">
+                <div class="max-w-7xl mx-auto">
+                    @hasSection('content')
+                        @yield('content')
+                    @else
+                        {{ $slot }}
+                    @endif
                 </div>
             </main>
         </div>
 
-        <script>
-        @RegisterServiceWorkerScript
-        </script>
+        <!-- ==================== MOBILE BOTTOM NAVIGATION ==================== -->
+        <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 safe-area-bottom">
+            <div class="flex items-center justify-around h-16">
+                @php
+                    $mobileNav = [
+                        ['route' => 'dashboard', 'icon' => '🏠', 'label' => 'Home', 'match' => 'dashboard'],
+                        ['route' => 'transactions.index', 'icon' => '💳', 'label' => 'Transaksi', 'match' => 'transactions.*'],
+                        ['route' => 'savings.index', 'icon' => '🎯', 'label' => 'Target', 'match' => 'savings.*'],
+                        ['route' => 'ai.chat', 'icon' => '🤖', 'label' => 'AI', 'match' => 'ai.*'],
+                        ['route' => 'profile.edit', 'icon' => '👤', 'label' => 'Profil', 'match' => 'profile.*'],
+                    ];
+                @endphp
+                
+                @foreach($mobileNav as $item)
+                    @if(Route::has($item['route']))
+                        <a href="{{ route($item['route']) }}" 
+                           class="flex flex-col items-center justify-center flex-1 py-2 transition
+                                  {{ request()->routeIs($item['match']) 
+                                      ? 'text-emerald-600 dark:text-emerald-400' 
+                                      : 'text-slate-400 dark:text-slate-500' }}">
+                            <span class="text-xl mb-0.5">{{ $item['icon'] }}</span>
+                            <span class="text-[10px] font-medium">{{ $item['label'] }}</span>
+                        </a>
+                    @endif
+                @endforeach
+            </div>
+        </nav>
+    </div>
 
-    </body>
+    <!-- Toast Notifications -->
+    <div id="toast-container" 
+         x-data="{ toasts: [] }"
+         @toast.window="toasts.push({id: Date.now(), message: $event.detail.message, type: $event.detail.type || 'success'}); setTimeout(() => toasts.shift(), 4000)"
+         class="fixed bottom-20 lg:bottom-8 left-4 right-4 lg:left-auto lg:right-8 lg:w-96 z-50 flex flex-col gap-2 pointer-events-none">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div x-show="true"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 :class="{
+                     'bg-emerald-600': toast.type === 'success',
+                     'bg-red-600': toast.type === 'error',
+                     'bg-amber-500': toast.type === 'warning',
+                     'bg-blue-600': toast.type === 'info'
+                 }"
+                 class="px-4 py-3 rounded-xl text-white text-sm font-medium shadow-lg pointer-events-auto flex items-center gap-3">
+                <span x-text="toast.message"></span>
+            </div>
+        </template>
+    </div>
+
+    <script>
+    @RegisterServiceWorkerScript
+    
+    window.showToast = (message, type = 'success') => {
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message, type } }));
+    };
+    </script>
+
+    @if(session('success'))
+    <script>document.addEventListener('DOMContentLoaded', () => window.showToast('{{ session('success') }}', 'success'));</script>
+    @endif
+    @if(session('error'))
+    <script>document.addEventListener('DOMContentLoaded', () => window.showToast('{{ session('error') }}', 'error'));</script>
+    @endif
+
+    @stack('scripts')
+</body>
 </html>

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Transaction;
 use App\Models\WalletSetting;
 use App\Models\Category;
+use App\Services\FinancialSummaryService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use App\Services\SpendingPatternAnalyzer;
@@ -80,10 +81,10 @@ class AIRecommendationService
      */
     protected function getTotalExpense(int $userId, Carbon $startDate, Carbon $endDate): float
     {
-        return Transaction::forUser($userId)
+        return (float) (Transaction::forUser($userId)
             ->expense()
             ->dateRange($startDate, $endDate)
-            ->sum('amount');
+            ->sum('amount') ?? 0);
     }
 
     /**
@@ -91,12 +92,19 @@ class AIRecommendationService
      */
     protected function getCategoryBreakdown(int $userId, Carbon $startDate, Carbon $endDate): Collection
     {
-        return Transaction::forUser($userId)
+        $transactions = Transaction::forUser($userId)
             ->expense()
             ->dateRange($startDate, $endDate)
             ->with('category')
-            ->get()
-            ->groupBy('category.name')
+            ->get();
+        
+        // Defensive: return empty collection if no transactions
+        if ($transactions->isEmpty()) {
+            return collect([]);
+        }
+        
+        return $transactions
+            ->groupBy(fn($t) => $t->category?->name ?? 'Tanpa Kategori')
             ->map(function ($transactions, $categoryName) {
                 $category = $transactions->first()->category;
                 return [
@@ -560,5 +568,428 @@ Balance saat ini: Rp {$data['wallet_setting']->balance}
 Berikan rekomendasi dalam bahasa Indonesia yang casual, maksimal 3-4 paragraf pendek.
 Tone: supportive, tidak judgmental, actionable.
 PROMPT;
+    }
+
+    /**
+     * Get financial context for AI chat
+     * Returns a summary of user's financial situation
+     * 
+     * NOW USES FinancialSummaryService for single source of truth
+     */
+    public function getFinancialContext(int $userId): array
+    {
+        // Use the centralized financial service
+        $financialService = app(FinancialSummaryService::class);
+        return $financialService->getAIContext($userId);
+    }
+
+    /**
+     * Build context string for AI chat
+     */
+    public function buildContextString(array $context): string
+    {
+        $balance = 'Rp ' . number_format($context['balance'], 0, ',', '.');
+        $monthlyExpense = 'Rp ' . number_format($context['monthly_expense'], 0, ',', '.');
+        $weeklyExpense = 'Rp ' . number_format($context['weekly_expense'], 0, ',', '.');
+        $monthlyIncome = 'Rp ' . number_format($context['monthly_income'], 0, ',', '.');
+        
+        $contextStr = "DATA KEUANGAN USER:\n";
+        $contextStr .= "- Saldo saat ini: {$balance}\n";
+        $contextStr .= "- Pemasukan bulan ini: {$monthlyIncome}\n";
+        $contextStr .= "- Pengeluaran bulan ini: {$monthlyExpense}\n";
+        $contextStr .= "- Pengeluaran 7 hari terakhir: {$weeklyExpense}\n";
+        
+        if ($context['monthly_allowance']) {
+            $contextStr .= "- Uang jajan bulanan: Rp " . number_format($context['monthly_allowance'], 0, ',', '.') . "\n";
+        }
+        if ($context['weekly_allowance']) {
+            $contextStr .= "- Uang jajan mingguan: Rp " . number_format($context['weekly_allowance'], 0, ',', '.') . "\n";
+        }
+        if ($context['financial_goal']) {
+            $contextStr .= "- Target tabungan: Rp " . number_format($context['financial_goal'], 0, ',', '.') . "\n";
+        }
+
+        // Category breakdown
+        if (!empty($context['category_breakdown'])) {
+            $contextStr .= "\nPENGELUARAN PER KATEGORI BULAN INI:\n";
+            foreach ($context['category_breakdown'] as $cat) {
+                $amount = 'Rp ' . number_format($cat['total'], 0, ',', '.');
+                $contextStr .= "- {$cat['name']}: {$amount} ({$cat['count']} transaksi)\n";
+            }
+        }
+
+        // Saving goals
+        if (!empty($context['saving_goals'])) {
+            $contextStr .= "\nTARGET TABUNGAN AKTIF:\n";
+            foreach ($context['saving_goals'] as $goal) {
+                $target = 'Rp ' . number_format($goal['target'], 0, ',', '.');
+                $current = 'Rp ' . number_format($goal['current'], 0, ',', '.');
+                $deadline = $goal['deadline'] ? " (deadline: {$goal['deadline']})" : '';
+                $contextStr .= "- {$goal['name']}: {$current} / {$target} ({$goal['progress']}%){$deadline}\n";
+            }
+        }
+
+        return $contextStr;
+    }
+
+    /**
+     * Chat with AI - process user message and return AI response
+     * This uses rule-based responses with context awareness
+     */
+    public function chatWithAI(string $message, array $context, array $chatHistory = []): string
+    {
+        $message = strtolower(trim($message));
+        
+        // Build context string for reference
+        $contextString = $this->buildContextString($context);
+        
+        // Detect intent from message
+        $intent = $this->detectIntent($message);
+        
+        // Generate response based on intent
+        return $this->generateChatResponse($intent, $message, $context, $chatHistory);
+    }
+
+    /**
+     * Detect user intent from message
+     */
+    protected function detectIntent(string $message): string
+    {
+        // Balance/Saldo related
+        if (preg_match('/saldo|balance|uang\s*(saya|ku|gue)?|duit/i', $message)) {
+            return 'balance';
+        }
+        
+        // Spending/Pengeluaran related
+        if (preg_match('/pengeluaran|spending|habis|boros|keluar/i', $message)) {
+            return 'spending';
+        }
+        
+        // Income/Pemasukan related
+        if (preg_match('/pemasukan|income|pendapatan|masuk|terima/i', $message)) {
+            return 'income';
+        }
+        
+        // Saving/Tabungan related
+        if (preg_match('/tabung|saving|target|goal|nabung|simpan/i', $message)) {
+            return 'savings';
+        }
+        
+        // Tips/Advice related
+        if (preg_match('/tips|saran|rekomendasi|advice|gimana|bagaimana|cara|hemat/i', $message)) {
+            return 'tips';
+        }
+        
+        // Category breakdown
+        if (preg_match('/kategori|breakdown|detail|rinci/i', $message)) {
+            return 'category';
+        }
+        
+        // Budget related
+        if (preg_match('/budget|anggaran|jajan|allowance/i', $message)) {
+            return 'budget';
+        }
+        
+        // Greeting
+        if (preg_match('/^(hai|halo|hi|hello|hey|pagi|siang|sore|malam)/i', $message)) {
+            return 'greeting';
+        }
+        
+        // Thanks
+        if (preg_match('/terima\s*kasih|thanks|makasih|thx/i', $message)) {
+            return 'thanks';
+        }
+        
+        // Help
+        if (preg_match('/help|bantu|bisa\s*apa|fitur/i', $message)) {
+            return 'help';
+        }
+        
+        return 'general';
+    }
+
+    /**
+     * Generate chat response based on intent
+     */
+    protected function generateChatResponse(string $intent, string $message, array $context, array $chatHistory): string
+    {
+        switch ($intent) {
+            case 'greeting':
+                return $this->getGreetingResponse();
+                
+            case 'thanks':
+                return $this->getThanksResponse();
+                
+            case 'help':
+                return $this->getHelpResponse();
+                
+            case 'balance':
+                return $this->getBalanceResponse($context);
+                
+            case 'spending':
+                return $this->getSpendingResponse($context);
+                
+            case 'income':
+                return $this->getIncomeResponse($context);
+                
+            case 'savings':
+                return $this->getSavingsResponse($context);
+                
+            case 'tips':
+                return $this->getTipsResponse($context);
+                
+            case 'category':
+                return $this->getCategoryResponse($context);
+                
+            case 'budget':
+                return $this->getBudgetResponse($context);
+                
+            default:
+                return $this->getGeneralResponse($context);
+        }
+    }
+
+    protected function getGreetingResponse(): string
+    {
+        $greetings = [
+            "Hai! 👋 Aku YourMoment AI Assistant. Ada yang bisa kubantu soal keuanganmu hari ini?",
+            "Halo! 🌟 Senang bisa ngobrol denganmu. Mau tanya apa tentang finansialmu?",
+            "Hey there! ✨ Aku siap bantu kamu manage keuangan. Ada pertanyaan?",
+        ];
+        return $greetings[array_rand($greetings)];
+    }
+
+    protected function getThanksResponse(): string
+    {
+        $responses = [
+            "Sama-sama! 😊 Kalau ada pertanyaan lagi, jangan sungkan ya!",
+            "My pleasure! 🌟 Semoga tips-nya membantu. Chat lagi kalau butuh bantuan!",
+            "You're welcome! 💚 Keep tracking dan semangat nabungnya!",
+        ];
+        return $responses[array_rand($responses)];
+    }
+
+    protected function getHelpResponse(): string
+    {
+        return "Aku bisa bantu kamu dengan:\n\n" .
+            "💰 **Cek saldo** - Tanya saldo atau uang kamu\n" .
+            "📊 **Analisis pengeluaran** - Lihat pola spending\n" .
+            "💵 **Info pemasukan** - Rangkuman income\n" .
+            "🎯 **Target tabungan** - Progress saving goals\n" .
+            "💡 **Tips hemat** - Rekomendasi keuangan\n" .
+            "📈 **Breakdown kategori** - Detail per kategori\n\n" .
+            "Coba tanya: \"Berapa saldo saya?\" atau \"Tips hemat dong!\"";
+    }
+
+    protected function getBalanceResponse(array $context): string
+    {
+        $balance = 'Rp ' . number_format($context['balance'], 0, ',', '.');
+        
+        $responses = [
+            "💰 Saldo kamu saat ini: **{$balance}**\n\nMau tau breakdown pengeluarannya?",
+            "Saldo di dompet: **{$balance}** 💵\n\nPerlu tips untuk mengaturnya?",
+        ];
+        
+        $response = $responses[array_rand($responses)];
+        
+        // Add context if balance is low
+        if ($context['balance'] < 100000) {
+            $response .= "\n\n⚠️ Saldo agak tipis nih. Mungkin waktunya top up atau kurangi pengeluaran.";
+        }
+        
+        return $response;
+    }
+
+    protected function getSpendingResponse(array $context): string
+    {
+        $monthly = 'Rp ' . number_format($context['monthly_expense'], 0, ',', '.');
+        $weekly = 'Rp ' . number_format($context['weekly_expense'], 0, ',', '.');
+        
+        $response = "📊 **Analisis Pengeluaran:**\n\n";
+        $response .= "• Bulan ini: {$monthly}\n";
+        $response .= "• 7 hari terakhir: {$weekly}\n\n";
+        
+        // Add top categories
+        if (!empty($context['category_breakdown'])) {
+            $response .= "**Top Kategori:**\n";
+            $topCats = array_slice($context['category_breakdown'], 0, 3);
+            foreach ($topCats as $cat) {
+                $amount = 'Rp ' . number_format($cat['total'], 0, ',', '.');
+                $response .= "• {$cat['name']}: {$amount}\n";
+            }
+        }
+        
+        // Add insight
+        if ($context['weekly_allowance'] && $context['weekly_expense'] > $context['weekly_allowance']) {
+            $response .= "\n⚠️ Pengeluaran mingguan sudah melebihi budget!";
+        } else {
+            $response .= "\n✅ Keep tracking ya!";
+        }
+        
+        return $response;
+    }
+
+    protected function getIncomeResponse(array $context): string
+    {
+        $monthly = 'Rp ' . number_format($context['monthly_income'], 0, ',', '.');
+        $expense = 'Rp ' . number_format($context['monthly_expense'], 0, ',', '.');
+        $net = $context['monthly_income'] - $context['monthly_expense'];
+        $netFormatted = 'Rp ' . number_format(abs($net), 0, ',', '.');
+        
+        $response = "💵 **Pemasukan Bulan Ini:** {$monthly}\n\n";
+        $response .= "Pengeluaran: {$expense}\n";
+        
+        if ($net >= 0) {
+            $response .= "Sisa: +{$netFormatted} ✅\n\n";
+            $response .= "Bagus! Kamu masih surplus bulan ini. 💪";
+        } else {
+            $response .= "Defisit: -{$netFormatted} ⚠️\n\n";
+            $response .= "Hmm, pengeluaran lebih besar dari pemasukan. Coba evaluasi spending-nya ya!";
+        }
+        
+        return $response;
+    }
+
+    protected function getSavingsResponse(array $context): string
+    {
+        if (empty($context['saving_goals'])) {
+            return "🎯 Kamu belum punya target tabungan aktif.\n\n" .
+                "Yuk bikin target! Misalnya:\n" .
+                "• Beli gadget baru\n" .
+                "• Dana darurat\n" .
+                "• Liburan\n\n" .
+                "Pergi ke menu **Target** untuk mulai! 💪";
+        }
+        
+        $response = "🎯 **Target Tabungan Aktif:**\n\n";
+        
+        foreach ($context['saving_goals'] as $goal) {
+            $target = 'Rp ' . number_format($goal['target'], 0, ',', '.');
+            $current = 'Rp ' . number_format($goal['current'], 0, ',', '.');
+            $progressBar = $this->makeProgressBar($goal['progress']);
+            
+            $response .= "**{$goal['name']}**\n";
+            $response .= "{$progressBar} {$goal['progress']}%\n";
+            $response .= "{$current} / {$target}\n\n";
+        }
+        
+        $response .= "Terus semangat nabungnya! 💪";
+        
+        return $response;
+    }
+
+    protected function getTipsResponse(array $context): string
+    {
+        $tips = [];
+        
+        // Analyze and give contextual tips
+        if (!empty($context['category_breakdown'])) {
+            $totalExpense = array_sum(array_column($context['category_breakdown'], 'total'));
+            
+            foreach ($context['category_breakdown'] as $cat) {
+                $percentage = $totalExpense > 0 ? ($cat['total'] / $totalExpense) * 100 : 0;
+                
+                if ($cat['name'] === 'Makan' && $percentage > 50) {
+                    $tips[] = "🍱 Pengeluaran makan >50%. Coba meal prep di weekend untuk hemat!";
+                }
+                if ($cat['name'] === 'Nongkrong' && $percentage > 20) {
+                    $tips[] = "☕ Budget nongkrong cukup besar. Sesekali hangout di tempat gratis!";
+                }
+                if ($cat['name'] === 'Transport' && $percentage > 20) {
+                    $tips[] = "🚌 Transport lumayan tinggi. Coba kombinasi jalan kaki untuk jarak dekat.";
+                }
+            }
+        }
+        
+        // General tips if no specific issues
+        if (empty($tips)) {
+            $generalTips = [
+                "💡 Sisihkan 20% dari pemasukan untuk tabungan sebelum dipakai.",
+                "📝 Catat setiap pengeluaran, sekecil apapun. Awareness is key!",
+                "🎯 Set target tabungan yang spesifik, lebih mudah tercapai.",
+                "⏰ Tunggu 24 jam sebelum beli barang non-esensial.",
+                "🍱 Bawa bekal bisa hemat sampai 50% budget makan!",
+            ];
+            $tips[] = $generalTips[array_rand($generalTips)];
+            $tips[] = $generalTips[array_rand($generalTips)];
+        }
+        
+        return "💡 **Tips Keuangan:**\n\n" . implode("\n\n", array_unique($tips));
+    }
+
+    protected function getCategoryResponse(array $context): string
+    {
+        if (empty($context['category_breakdown'])) {
+            return "📊 Belum ada data pengeluaran bulan ini.\n\nMulai catat transaksimu di menu Transaksi!";
+        }
+        
+        $response = "📊 **Breakdown Pengeluaran Bulan Ini:**\n\n";
+        
+        $totalExpense = array_sum(array_column($context['category_breakdown'], 'total'));
+        
+        foreach ($context['category_breakdown'] as $cat) {
+            $amount = 'Rp ' . number_format($cat['total'], 0, ',', '.');
+            $percentage = $totalExpense > 0 ? round(($cat['total'] / $totalExpense) * 100, 1) : 0;
+            $response .= "• **{$cat['name']}**: {$amount} ({$percentage}%)\n";
+        }
+        
+        $total = 'Rp ' . number_format($totalExpense, 0, ',', '.');
+        $response .= "\n**Total:** {$total}";
+        
+        return $response;
+    }
+
+    protected function getBudgetResponse(array $context): string
+    {
+        $response = "💵 **Info Budget:**\n\n";
+        
+        if ($context['monthly_allowance']) {
+            $monthly = 'Rp ' . number_format($context['monthly_allowance'], 0, ',', '.');
+            $spent = 'Rp ' . number_format($context['monthly_expense'], 0, ',', '.');
+            $remaining = $context['monthly_allowance'] - $context['monthly_expense'];
+            $remainingFormatted = 'Rp ' . number_format(abs($remaining), 0, ',', '.');
+            
+            $response .= "Uang jajan bulanan: {$monthly}\n";
+            $response .= "Sudah dipakai: {$spent}\n";
+            $response .= "Sisa: " . ($remaining >= 0 ? "+{$remainingFormatted} ✅" : "-{$remainingFormatted} ⚠️") . "\n\n";
+        }
+        
+        if ($context['weekly_allowance']) {
+            $weekly = 'Rp ' . number_format($context['weekly_allowance'], 0, ',', '.');
+            $spent = 'Rp ' . number_format($context['weekly_expense'], 0, ',', '.');
+            $remaining = $context['weekly_allowance'] - $context['weekly_expense'];
+            $remainingFormatted = 'Rp ' . number_format(abs($remaining), 0, ',', '.');
+            
+            $response .= "Uang jajan mingguan: {$weekly}\n";
+            $response .= "Sudah dipakai (7 hari): {$spent}\n";
+            $response .= "Status: " . ($remaining >= 0 ? "On budget ✅" : "Over budget ⚠️");
+        }
+        
+        if (!$context['monthly_allowance'] && !$context['weekly_allowance']) {
+            $response .= "Kamu belum set budget. Pergi ke Profil > Pengaturan Wallet untuk set uang jajan bulanan/mingguan!";
+        }
+        
+        return $response;
+    }
+
+    protected function getGeneralResponse(array $context): string
+    {
+        $responses = [
+            "Hmm, aku kurang paham pertanyaannya. 🤔\n\nCoba tanya tentang:\n• Saldo kamu\n• Pengeluaran minggu/bulan ini\n• Target tabungan\n• Tips hemat",
+            "Maaf, aku belum bisa jawab itu. 😅\n\nAku bisa bantu:\n• Cek saldo\n• Analisis spending\n• Info saving goals\n• Tips keuangan",
+            "Pertanyaan menarik! Tapi aku fokus di keuangan aja ya. 💰\n\nMau tau saldo, pengeluaran, atau tips hemat?",
+        ];
+        
+        return $responses[array_rand($responses)];
+    }
+
+    /**
+     * Make a simple text progress bar
+     */
+    protected function makeProgressBar(float $percentage): string
+    {
+        $filled = (int) ($percentage / 10);
+        $empty = 10 - $filled;
+        return str_repeat('█', $filled) . str_repeat('░', $empty);
     }
 }

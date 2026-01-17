@@ -63,4 +63,39 @@ class User extends Authenticatable
     {
         return $this->hasMany(Transaction::class);
     }
+
+    /**
+     * Get all financial insights for this user
+     */
+    public function financialInsights(): HasMany
+    {
+        return $this->hasMany(FinancialInsight::class);
+    }
+
+    /**
+     * Get all saving goals for this user
+     */
+    public function savingGoals(): HasMany
+    {
+        return $this->hasMany(SavingGoal::class);
+    }
+
+    /**
+     * Get current balance from wallet settings
+     * Single source of truth for balance
+     */
+    public function getBalanceAttribute(): float
+    {
+        return (float) ($this->walletSetting?->balance ?? 0);
+    }
+
+    /**
+     * Calculate balance from transactions (for verification/sync)
+     */
+    public function calculateBalanceFromTransactions(): float
+    {
+        $income = $this->transactions()->where('type', 'income')->sum('amount');
+        $expense = $this->transactions()->where('type', 'expense')->sum('amount');
+        return (float) ($income - $expense);
+    }
 }

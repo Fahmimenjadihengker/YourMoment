@@ -4,11 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Transaction;
+use App\Services\CacheService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class TransactionController extends Controller
 {
+    protected CacheService $cacheService;
+
+    public function __construct(CacheService $cacheService)
+    {
+        $this->cacheService = $cacheService;
+    }
     /**
      * Display income creation form
      */
@@ -43,17 +50,29 @@ class TransactionController extends Controller
 
         $validated['user_id'] = auth()->id();
 
+        // === OPTIMIZED: Single wallet update ===
+        $wallet = auth()->user()->walletSetting;
+        if (!$wallet) {
+            $wallet = \App\Models\WalletSetting::create([
+                'user_id' => auth()->id(),
+                'balance' => 0,
+            ]);
+        }
+        
+        // Apply transaction effect
+        $amount = (float) $validated['amount'];
+        if ($validated['type'] === 'income') {
+            $wallet->increment('balance', $amount);
+        } else {
+            $wallet->decrement('balance', $amount);
+        }
+
         // Create transaction
         $transaction = Transaction::create($validated);
 
-        // Update wallet balance
-        $wallet = auth()->user()->walletSetting;
-        if ($validated['type'] === 'income') {
-            $wallet->balance += $validated['amount'];
-        } else {
-            $wallet->balance -= $validated['amount'];
-        }
-        $wallet->save();
+        // === CACHE INVALIDATION: Clear cache untuk bulan ini ===
+        $period = CacheService::extractPeriod($validated['transaction_date']);
+        $this->cacheService->invalidatePeriod(auth()->id(), $period);
 
         // Determine redirect
         $type = $validated['type'];
@@ -125,27 +144,42 @@ class TransactionController extends Controller
         ]);
 
         $wallet = auth()->user()->walletSetting;
-        $oldAmount = $transaction->amount;
-        $newAmount = $validated['amount'];
-
-        // Reverse old transaction effect on balance
-        if ($transaction->type === 'income') {
-            $wallet->balance -= $oldAmount;
-        } else {
-            $wallet->balance += $oldAmount;
+        
+        // Defensive: ensure wallet exists
+        if (!$wallet) {
+            $wallet = \App\Models\WalletSetting::create([
+                'user_id' => auth()->id(),
+                'balance' => 0,
+            ]);
         }
+        
+        $oldAmount = (float) $transaction->amount;
+        $newAmount = (float) $validated['amount'];
 
-        // Apply new amount
-        if ($transaction->type === 'income') {
-            $wallet->balance += $newAmount;
-        } else {
-            $wallet->balance -= $newAmount;
+        // === OPTIMIZED: Minimize wallet updates ===
+        // Only update if amount changed
+        if ($oldAmount !== $newAmount) {
+            $difference = $newAmount - $oldAmount;
+            
+            if ($transaction->type === 'income') {
+                $wallet->increment('balance', $difference);
+            } else {
+                $wallet->decrement('balance', $difference);
+            }
         }
-
-        $wallet->save();
 
         // Update transaction
         $transaction->update($validated);
+
+        // === CACHE INVALIDATION: Clear cache untuk bulan lama & bulan baru ===
+        $oldPeriod = CacheService::extractPeriod($transaction->transaction_date);
+        $newPeriod = CacheService::extractPeriod($validated['transaction_date']);
+        
+        $this->cacheService->invalidatePeriod(auth()->id(), $oldPeriod);
+        if ($oldPeriod !== $newPeriod) {
+            // Jika transaksi dipindah ke bulan lain, invalidate keduanya
+            $this->cacheService->invalidatePeriod(auth()->id(), $newPeriod);
+        }
 
         $type = $transaction->type;
         $message = ucfirst($type) . ' updated successfully!';
@@ -166,14 +200,21 @@ class TransactionController extends Controller
 
         $wallet = auth()->user()->walletSetting;
 
-        // Reverse transaction effect on balance
-        if ($transaction->type === 'income') {
-            $wallet->balance -= $transaction->amount;
-        } else {
-            $wallet->balance += $transaction->amount;
+        // Defensive: only update balance if wallet exists
+        if ($wallet) {
+            $amount = (float) $transaction->amount;
+            
+            // Reverse transaction effect on balance
+            if ($transaction->type === 'income') {
+                $wallet->decrement('balance', $amount);
+            } else {
+                $wallet->increment('balance', $amount);
+            }
         }
 
-        $wallet->save();
+        // === CACHE INVALIDATION: Clear cache untuk bulan ini ===
+        $period = CacheService::extractPeriod($transaction->transaction_date);
+        $this->cacheService->invalidatePeriod(auth()->id(), $period);
 
         $type = $transaction->type;
         $transaction->delete();
