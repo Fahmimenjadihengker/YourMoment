@@ -119,6 +119,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Legacy AI recommendation route
     Route::get('/ai-recommendation', [AIRecommendationController::class, 'index'])
         ->name('ai-recommendation');
+    
+    Route::post('/ai-recommendation/simulate', [AIRecommendationController::class, 'simulate'])
+        ->name('ai-recommendation.simulate');
 
     // --------------------------------------------------------
     // PROFILE MANAGEMENT (Tab 5: Profil)

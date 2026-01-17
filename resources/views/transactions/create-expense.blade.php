@@ -79,8 +79,8 @@
                         @enderror
                     </div>
 
-                    {{-- Date & Payment Grid --}}
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {{-- Date, Time & Payment Grid --}}
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div>
                             <label for="transaction_date" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -93,6 +93,20 @@
                             @error('transaction_date')
                             <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
                             @enderror
+                        </div>
+
+                        <div x-data="{ timeValue: '{{ old('transaction_time') }}' }" x-init="if (!timeValue) { const now = new Date(); timeValue = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0'); }">
+                            <label for="transaction_time" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Waktu
+                            </label>
+                            <input type="time" id="transaction_time" name="transaction_time"
+                                   class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 transition @error('transaction_time') border-red-500 @enderror"
+                                   x-model="timeValue">
+                            @error('transaction_time')
+                            <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                            @enderror
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Waktu otomatis terisi sesuai jam device</p>
                         </div>
 
                         <div>

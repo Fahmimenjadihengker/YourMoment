@@ -6,6 +6,34 @@
         </div>
     </x-slot>
 
+    {{-- ==================== PERIOD SELECTOR ==================== --}}
+    <div class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">Ringkasan Keuangan</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ $periodDetail ?? 'Periode saat ini' }}</p>
+            </div>
+            
+            {{-- Period Toggle --}}
+            <div class="inline-flex bg-slate-100 dark:bg-slate-700 rounded-xl p-1 gap-1">
+                <a href="{{ route('dashboard', ['period' => 'weekly']) }}" 
+                   class="px-4 py-2 rounded-lg text-sm font-semibold transition {{ ($periodMode ?? 'monthly') === 'weekly' ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white' }}">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Minggu Ini
+                    </span>
+                </a>
+                <a href="{{ route('dashboard', ['period' => 'monthly']) }}" 
+                   class="px-4 py-2 rounded-lg text-sm font-semibold transition {{ ($periodMode ?? 'monthly') === 'monthly' ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white' }}">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        Bulan Ini
+                    </span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     {{-- ==================== TOP STATS ROW ==================== --}}
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
         {{-- Balance Card --}}
@@ -62,6 +90,7 @@
             </p>
         </div>
     </div>
+
 
     {{-- ==================== MAIN CONTENT GRID ==================== --}}
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
