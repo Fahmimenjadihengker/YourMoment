@@ -1,0 +1,32 @@
+User ID: 1
+User Balance: Rp 2.850.000
+
+=== Testing Balance-Based Budget Planning ===
+
+💰 **Strategi Hemat Bulan Depan**
+
+📊 **Saldo Kamu Saat Ini:**
+💵 **Rp 2.850.000**
+
+📅 **Alokasi Budget (30 hari):**
+• Per bulan: **Rp 2.850.000**
+• Per minggu: **Rp 665.000**
+• Per hari: **Rp 95.000**
+
+🎯 **Alokasi Ideal per Kategori:**
+🍔 **Makan** (40%): Rp 1.140.000 (~Rp 38.000/hari)
+🚗 **Transport** (20%): Rp 570.000 (~Rp 19.000/hari)
+☕ **Nongkrong** (15%): Rp 427.500 (~Rp 14.250/hari)
+📚 **Akademik** (10%): Rp 285.000 (~Rp 9.500/hari)
+📦 **Lainnya** (15%): Rp 427.500 (~Rp 14.250/hari)
+
+💡 **Strategi Hemat Konkret:**
+• 🍚 **Makan:** Kombinasi masak + makan luar (2:1)
+• 🚗 **Transport:** Gunakan transportasi umum
+• ☕ **Nongkrong:** Max 2x seminggu, set budget max Rp 50rb
+• 📝 **Tracking:** Catat setiap pengeluaran di app ini
+• 🎯 **Rule 24 jam:** Tunda pembelian impulsif 1 hari
+• 💪 **Challenge:** Coba 1 hari tanpa pengeluaran per minggu
+
+
+=== END ===
