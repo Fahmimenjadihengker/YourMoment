@@ -79,7 +79,11 @@ class TransactionController extends Controller
         $message = $type === 'income' ? 'Pemasukan berhasil ditambahkan' : 'Pengeluaran berhasil ditambahkan';
 
         return redirect()->route('transactions.index')
-            ->with('success', $message);
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Berhasil',
+                'text' => $message
+            ]);
     }
 
     /**
@@ -185,7 +189,11 @@ class TransactionController extends Controller
         $message = 'Transaksi berhasil diperbarui';
 
         return redirect()->route('transactions.index')
-            ->with('success', $message);
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Berhasil',
+                'text' => $message
+            ]);
     }
 
     /**
@@ -222,6 +230,10 @@ class TransactionController extends Controller
         $message = 'Transaksi berhasil dihapus';
 
         return redirect()->route('transactions.index')
-            ->with('success', $message);
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Berhasil dihapus',
+                'text' => $message
+            ]);
     }
 }

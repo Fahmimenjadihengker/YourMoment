@@ -94,6 +94,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('store');
         Route::get('/{goal}', [SavingGoalController::class, 'show'])
             ->name('show');
+        Route::get('/{goal}/edit', [SavingGoalController::class, 'edit'])
+            ->name('edit');
+        Route::put('/{goal}', [SavingGoalController::class, 'update'])
+            ->name('update');
         Route::post('/{goal}/add-funds', [SavingGoalController::class, 'addFunds'])
             ->name('add-funds');
         Route::post('/{goal}/cancel', [SavingGoalController::class, 'cancel'])

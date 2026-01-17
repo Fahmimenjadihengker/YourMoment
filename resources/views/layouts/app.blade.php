@@ -44,6 +44,9 @@
     <!-- PWA Configuration -->
     @PwaHead
 
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -387,17 +390,88 @@
         navigator.serviceWorker.register('/serviceworker.js').catch(err => console.log('SW registration failed'));
     }
     
-    // Toast Notification Helper
+    // Toast Notification Helper (for minor notifications)
     window.showToast = (message, type = 'success') => {
         window.dispatchEvent(new CustomEvent('toast', { detail: { message, type } }));
     };
+
+    // SweetAlert Helper Functions
+    window.showSwal = (options) => {
+        const isDark = document.documentElement.classList.contains('dark');
+        return Swal.fire({
+            background: isDark ? '#1e293b' : '#ffffff',
+            color: isDark ? '#f1f5f9' : '#1e293b',
+            confirmButtonColor: '#10b981',
+            ...options
+        });
+    };
+
+    window.showSuccess = (title, text) => {
+        return window.showSwal({
+            icon: 'success',
+            title: title,
+            text: text,
+            timer: 2500,
+            showConfirmButton: false
+        });
+    };
+
+    window.showError = (title, text) => {
+        return window.showSwal({
+            icon: 'error',
+            title: title,
+            text: text
+        });
+    };
+
+    window.confirmDelete = (title, text) => {
+        const isDark = document.documentElement.classList.contains('dark');
+        return Swal.fire({
+            icon: 'warning',
+            title: title,
+            text: text,
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: isDark ? '#475569' : '#94a3b8',
+            confirmButtonText: 'Ya, hapus',
+            cancelButtonText: 'Batal',
+            background: isDark ? '#1e293b' : '#ffffff',
+            color: isDark ? '#f1f5f9' : '#1e293b',
+            reverseButtons: true
+        });
+    };
     </script>
 
-    @if(session('success'))
-    <script>document.addEventListener('DOMContentLoaded', () => window.showToast('{{ session('success') }}', 'success'));</script>
+    {{-- SweetAlert Session Handler --}}
+    @if(session('swal'))
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const swalData = @json(session('swal'));
+            window.showSwal({
+                icon: swalData.type || 'success',
+                title: swalData.title || '',
+                text: swalData.text || '',
+                timer: swalData.timer || (swalData.type === 'success' ? 2500 : null),
+                showConfirmButton: swalData.type !== 'success'
+            });
+        });
+    </script>
     @endif
-    @if(session('error'))
-    <script>document.addEventListener('DOMContentLoaded', () => window.showToast('{{ session('error') }}', 'error'));</script>
+
+    {{-- Legacy success/error session handler (backwards compatible) --}}
+    @if(session('success') && !session('swal'))
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.showSuccess('Berhasil', '{{ session('success') }}');
+        });
+    </script>
+    @endif
+    @if(session('error') && !session('swal'))
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.showError('Gagal', '{{ session('error') }}');
+        });
+    </script>
     @endif
 
     @stack('scripts')

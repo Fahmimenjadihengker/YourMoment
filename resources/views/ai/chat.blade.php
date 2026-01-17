@@ -359,18 +359,21 @@ function aiChat() {
         },
 
         clearChat() {
-            if (confirm('Hapus semua chat?')) {
-                this.messages = [];
-                fetch('{{ route("ai.send") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ message: '__clear_history__' })
-                });
-            }
+            window.confirmDelete('Hapus semua chat?', 'Riwayat percakapan akan dihapus permanen.').then((result) => {
+                if (result.isConfirmed) {
+                    this.messages = [];
+                    fetch('{{ route("ai.send") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ message: '__clear_history__' })
+                    });
+                    window.showSuccess('Berhasil', 'Chat berhasil dihapus');
+                }
+            });
         },
 
         scrollToBottom() {

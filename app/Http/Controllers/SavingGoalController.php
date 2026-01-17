@@ -101,7 +101,11 @@ class SavingGoalController extends Controller
         }
 
         return redirect()->route('savings.show', $goal)
-            ->with('success', 'Target tabungan berhasil dibuat!');
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Berhasil',
+                'text' => 'Target tabungan berhasil dibuat'
+            ]);
     }
 
     /**
@@ -127,6 +131,98 @@ class SavingGoalController extends Controller
     }
 
     /**
+     * Show the form for editing the specified saving goal.
+     */
+    public function edit(SavingGoal $goal)
+    {
+        // Ensure user owns this goal
+        if ($goal->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        // Cannot edit completed/cancelled goals
+        if ($goal->status !== 'active') {
+            return redirect()->route('savings.show', $goal)
+                ->with('swal', [
+                    'type' => 'warning',
+                    'title' => 'Tidak bisa diedit',
+                    'text' => 'Target yang sudah selesai atau dibatalkan tidak bisa diedit.'
+                ]);
+        }
+
+        // Predefined icons and colors
+        $icons = ['🎯', '💰', '🏠', '🚗', '📱', '💻', '✈️', '🎓', '💍', '🎁', '🎮', '👗', '⌚', '📷', '🏖️'];
+        $colors = ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16'];
+
+        return view('savings.edit', compact('goal', 'icons', 'colors'));
+    }
+
+    /**
+     * Update the specified saving goal.
+     */
+    public function update(Request $request, SavingGoal $goal)
+    {
+        // Ensure user owns this goal
+        if ($goal->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        // Cannot update completed/cancelled goals
+        if ($goal->status !== 'active') {
+            return redirect()->route('savings.show', $goal)
+                ->with('swal', [
+                    'type' => 'warning',
+                    'title' => 'Tidak bisa diperbarui',
+                    'text' => 'Target yang sudah selesai atau dibatalkan tidak bisa diperbarui.'
+                ]);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'target_amount' => ['required', 'numeric', 'min:1000'],
+            'deadline' => ['nullable', 'date', 'after:today'],
+            'icon' => ['nullable', 'string', 'max:10'],
+            'color' => ['nullable', 'string', 'max:7'],
+            'priority' => ['nullable', Rule::in(['low', 'medium', 'high'])],
+        ], [
+            'name.required' => 'Nama target wajib diisi',
+            'target_amount.required' => 'Nominal target wajib diisi',
+            'target_amount.min' => 'Minimal target Rp1.000',
+            'deadline.after' => 'Deadline harus di masa depan',
+        ]);
+
+        // Validate target amount is not less than current amount
+        if ($validated['target_amount'] < $goal->current_amount) {
+            return back()->withInput()->withErrors([
+                'target_amount' => 'Target tidak boleh kurang dari jumlah yang sudah terkumpul (Rp ' . number_format($goal->current_amount, 0, ',', '.') . ')'
+            ]);
+        }
+
+        $goal->update([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'target_amount' => $validated['target_amount'],
+            'deadline' => $validated['deadline'] ?? null,
+            'icon' => $validated['icon'] ?? $goal->icon,
+            'color' => $validated['color'] ?? $goal->color,
+            'priority' => $validated['priority'] ?? $goal->priority,
+        ]);
+
+        // Check if target is now completed after updating target amount
+        if ($goal->current_amount >= $validated['target_amount']) {
+            $goal->update(['status' => 'completed']);
+        }
+
+        return redirect()->route('savings.show', $goal)
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Berhasil',
+                'text' => 'Target tabungan berhasil diperbarui'
+            ]);
+    }
+
+    /**
      * Add funds to a saving goal.
      */
     public function addFunds(Request $request, SavingGoal $goal)
@@ -138,7 +234,11 @@ class SavingGoalController extends Controller
 
         // Cannot add funds to completed/cancelled goals
         if ($goal->status !== 'active') {
-            return back()->with('error', 'Tidak bisa menambah dana ke target yang sudah selesai atau dibatalkan.');
+            return back()->with('swal', [
+                'type' => 'error',
+                'title' => 'Tidak dapat menambah dana',
+                'text' => 'Target yang sudah selesai atau dibatalkan tidak bisa ditambah dana.'
+            ]);
         }
 
         $validated = $request->validate([
@@ -155,11 +255,13 @@ class SavingGoalController extends Controller
             $validated['note'] ?? null
         );
 
-        $message = $goal->fresh()->status === 'completed'
-            ? 'Selamat! Target tabungan tercapai!'
-            : 'Dana berhasil ditambahkan!';
+        $isCompleted = $goal->fresh()->status === 'completed';
 
-        return back()->with('success', $message);
+        return back()->with('swal', [
+            'type' => 'success',
+            'title' => $isCompleted ? 'Selamat!' : 'Berhasil',
+            'text' => $isCompleted ? 'Target tabungan tercapai!' : 'Dana berhasil ditambahkan'
+        ]);
     }
 
     /**
@@ -176,7 +278,11 @@ class SavingGoalController extends Controller
         $goal->delete();
 
         return redirect()->route('savings.index')
-            ->with('success', "Target \"{$goalName}\" berhasil dihapus.");
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Berhasil dihapus',
+                'text' => "Target \"{$goalName}\" berhasil dihapus"
+            ]);
     }
 
     /**
@@ -191,6 +297,10 @@ class SavingGoalController extends Controller
 
         $goal->cancel();
 
-        return back()->with('success', 'Target tabungan dibatalkan.');
+        return back()->with('swal', [
+            'type' => 'success',
+            'title' => 'Berhasil',
+            'text' => 'Target tabungan dibatalkan'
+        ]);
     }
 }

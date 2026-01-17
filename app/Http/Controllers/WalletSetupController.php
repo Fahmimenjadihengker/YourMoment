@@ -69,7 +69,11 @@ class WalletSetupController extends Controller
         });
 
         return redirect()->route('dashboard')
-            ->with('success', 'Pengaturan wallet berhasil disimpan! Selamat datang di YourMoment!');
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Selamat datang!',
+                'text' => 'Pengaturan wallet berhasil disimpan. Selamat menggunakan YourMoment!'
+            ]);
     }
 
     /**
