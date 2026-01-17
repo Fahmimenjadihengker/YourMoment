@@ -66,7 +66,7 @@
             {{-- Financial Summary --}}
             <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-lg">
                 <h4 class="text-sm font-semibold mb-4 flex items-center">
-                    <span class="text-lg mr-2">💰</span>
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     Ringkasan Keuangan
                 </h4>
                 <div class="text-center mb-4">
@@ -85,7 +85,7 @@
                 <div class="space-y-4">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-2">
-                            <span class="text-lg">💳</span>
+                            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                             <span class="text-sm text-gray-600 dark:text-gray-400">Total Transaksi</span>
                         </div>
                         <span class="text-sm font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
@@ -94,7 +94,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-2">
-                            <span class="text-lg">🎯</span>
+                            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
                             <span class="text-sm text-gray-600 dark:text-gray-400">Target Tabungan</span>
                         </div>
                         <span class="text-sm font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">

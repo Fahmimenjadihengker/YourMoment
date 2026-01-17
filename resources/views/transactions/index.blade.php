@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center gap-2">
-            <span class="text-xl">💳</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
             <span>Transaksi</span>
         </div>
     </x-slot>
@@ -15,11 +15,13 @@
         <div class="hidden lg:flex gap-2">
             <a href="{{ route('transactions.create-income') }}"
                 class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm flex items-center gap-2">
-                <span>📥</span> Pemasukan
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                Pemasukan
             </a>
             <a href="{{ route('transactions.create-expense') }}"
                 class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition shadow-sm flex items-center gap-2">
-                <span>📤</span> Pengeluaran
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                Pengeluaran
             </a>
         </div>
     </div>
@@ -27,16 +29,19 @@
     <!-- Filter Tabs -->
     <div class="bg-white dark:bg-slate-800 rounded-xl p-1.5 shadow-sm border border-slate-200 dark:border-slate-700 mb-6 inline-flex gap-1 flex-wrap">
         <a href="{{ route('transactions.index') }}"
-            class="px-4 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition {{ !$filterType ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
-            📊 Semua
+            class="px-4 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition flex items-center gap-1.5 {{ !$filterType ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            Semua
         </a>
         <a href="{{ route('transactions.index', ['type' => 'income']) }}"
-            class="px-4 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition {{ $filterType === 'income' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
-            📥 Pemasukan
+            class="px-4 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition flex items-center gap-1.5 {{ $filterType === 'income' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            Pemasukan
         </a>
         <a href="{{ route('transactions.index', ['type' => 'expense']) }}"
-            class="px-4 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition {{ $filterType === 'expense' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
-            📤 Pengeluaran
+            class="px-4 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition flex items-center gap-1.5 {{ $filterType === 'expense' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+            Pengeluaran
         </a>
     </div>
 
@@ -61,7 +66,11 @@
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition border-l-4 {{ $transaction->type === 'income' ? 'border-l-emerald-500' : 'border-l-red-500' }}">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-3">
-                                <span class="text-2xl">{{ $transaction->category->icon ?? '📌' }}</span>
+                                @if($transaction->category && $transaction->category->icon)
+                                    <span class="text-2xl">{{ $transaction->category->icon }}</span>
+                                @else
+                                    <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+                                @endif
                                 <span class="font-semibold text-slate-900 dark:text-white">{{ $transaction->category->name }}</span>
                             </div>
                         </td>
@@ -75,14 +84,14 @@
                             <div class="flex items-center justify-center gap-2">
                                 <a href="{{ route('transactions.edit', $transaction) }}"
                                     class="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition" title="Edit">
-                                    ✏️
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 </a>
                                 <form action="{{ route('transactions.destroy', $transaction) }}" method="POST" class="inline"
                                     onsubmit="return confirm('Yakin hapus transaksi ini?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Hapus">
-                                        🗑️
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                     </button>
                                 </form>
                             </div>
@@ -100,7 +109,11 @@
         <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 border-l-4 {{ $transaction->type === 'income' ? 'border-l-emerald-500' : 'border-l-red-500' }}">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 flex-1">
-                    <div class="text-3xl">{{ $transaction->category->icon ?? '📌' }}</div>
+                    @if($transaction->category && $transaction->category->icon)
+                        <div class="text-3xl">{{ $transaction->category->icon }}</div>
+                    @else
+                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+                    @endif
                     <div>
                         <p class="font-semibold text-slate-900 dark:text-white text-sm">{{ $transaction->category->name ?? 'Tanpa Kategori' }}</p>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $transaction->transaction_date?->format('d M Y') ?? '-' }}</p>
@@ -113,14 +126,14 @@
                     <div class="flex items-center justify-end gap-1 mt-2">
                         <a href="{{ route('transactions.edit', $transaction) }}"
                             class="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded transition text-sm">
-                            ✏️
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                         </a>
                         <form action="{{ route('transactions.destroy', $transaction) }}" method="POST" class="inline"
                             onsubmit="return confirm('Yakin hapus transaksi ini?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition text-sm">
-                                🗑️
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
                         </form>
                     </div>
@@ -130,10 +143,16 @@
             @if($transaction->description || $transaction->payment_method)
             <div class="pt-3 border-t border-slate-100 dark:border-slate-700 space-y-1 text-xs mt-3">
                 @if($transaction->description)
-                <p class="text-slate-600 dark:text-slate-400">📝 {{ $transaction->description }}</p>
+                <p class="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    {{ $transaction->description }}
+                </p>
                 @endif
                 @if($transaction->payment_method)
-                <p class="text-slate-500 dark:text-slate-400">💳 {{ $transaction->payment_method }}</p>
+                <p class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    {{ $transaction->payment_method }}
+                </p>
                 @endif
             </div>
             @endif
@@ -148,7 +167,7 @@
     @else
     <!-- Empty State -->
     <div class="bg-white dark:bg-slate-800 rounded-xl p-8 lg:p-12 text-center shadow-sm border border-slate-200 dark:border-slate-700">
-        <p class="text-4xl mb-3">📜</p>
+        <svg class="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         <p class="text-slate-900 dark:text-white font-semibold text-lg mb-2">Belum Ada Transaksi</p>
         <p class="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-md mx-auto">
             @if($filterType)
@@ -158,11 +177,13 @@
             @endif
         </p>
         <div class="flex gap-3 justify-center flex-wrap">
-            <a href="{{ route('transactions.create-income') }}" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition">
-                📥 Tambah Pemasukan
+            <a href="{{ route('transactions.create-income') }}" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                Tambah Pemasukan
             </a>
-            <a href="{{ route('transactions.create-expense') }}" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition">
-                📤 Tambah Pengeluaran
+            <a href="{{ route('transactions.create-expense') }}" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                Tambah Pengeluaran
             </a>
         </div>
     </div>
@@ -171,12 +192,14 @@
     <!-- Mobile Quick Add Buttons -->
     <div class="lg:hidden fixed bottom-20 right-4 left-4 flex gap-2 z-40">
         <a href="{{ route('transactions.create-income') }}"
-            class="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-lg text-center">
-            📥 Pemasukan
+            class="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-lg flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            Pemasukan
         </a>
         <a href="{{ route('transactions.create-expense') }}"
-            class="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition shadow-lg text-center">
-            📤 Pengeluaran
+            class="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition shadow-lg flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+            Pengeluaran
         </a>
     </div>
 </x-app-layout>
