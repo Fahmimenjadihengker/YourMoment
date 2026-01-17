@@ -24,10 +24,7 @@ class AIRecommendationController extends Controller
         ChatIntentDetector $intentDetector,
         GoalSimulationService $goalSimulationService,
         ChatSessionMemoryService $sessionMemory,
-        FutureBudgetPlanningService $futureBudgetService
-    ) {
-    public function __construct(
-        AIRecommendationService $aiService,
+        FutureBudgetPlanningService $futureBudgetService,
         FinancialAnalysisService $analysisService
     ) {
         $this->aiService = $aiService;
@@ -49,7 +46,7 @@ class AIRecommendationController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        
+
         // Get period mode from query (default: monthly)
         $periodMode = $request->query('period', 'monthly');
         if (!in_array($periodMode, ['weekly', 'monthly', 'simulation'])) {
@@ -61,7 +58,7 @@ class AIRecommendationController extends Controller
             if ($periodMode === 'simulation') {
                 return view('ai-recommendation', $this->getSimulationViewData());
             }
-            
+
             // Mode WEEKLY / MONTHLY: ambil data dari database
             $analysis = $this->analysisService->generateAnalysis($user->id, $periodMode);
 
@@ -71,42 +68,42 @@ class AIRecommendationController extends Controller
                 'period' => $analysis['period'],
                 'comparisonPeriod' => $analysis['comparison_period'],
                 'isSimulation' => false,
-                
+
                 // Financial data (BERBASIS PERIODE)
                 'current' => $analysis['current'],
                 'previous' => $analysis['previous'],
                 'expenseRatio' => $analysis['expense_ratio'],
                 'timeRatio' => $analysis['time_ratio'],
-                
+
                 // Saldo total (VISUAL ONLY)
                 'totalBalance' => $analysis['total_balance'],
                 'totalBalanceNote' => $analysis['total_balance_note'] ?? '',
-                
+
                 // Legacy vars
                 'totalExpense' => $analysis['current']['total_expense'],
                 'totalIncome' => $analysis['current']['total_income'],
-                
+
                 // Daily patterns & recommendations
                 'dailyPatterns' => $analysis['daily_patterns'],
                 'dailyRecommendation' => $analysis['daily_recommendation'],
-                
+
                 // Analysis results
                 'trend' => $analysis['trend'],
                 'composition' => $analysis['composition'],
                 'patterns' => $analysis['patterns'],
                 'insights' => $analysis['insights'],
                 'warnings' => $analysis['warnings'],
-                
+
                 // Health score
                 'healthScore' => $analysis['health_score'],
-                
+
                 // Categories
                 'topCategories' => $analysis['top_categories'],
-                
+
                 // Full analysis
                 'walletSetting' => $user->walletSetting,
                 'analysis' => $analysis,
-                
+
                 // Simulation input (kosong untuk mode non-simulasi)
                 'simulationInput' => null,
             ]);
@@ -135,7 +132,7 @@ class AIRecommendationController extends Controller
                 'days_remaining' => $request->input('days_remaining'),
                 'total_days' => $request->input('total_days', 30),
             ];
-            
+
             // Generate analisis simulasi (TIDAK menyentuh database)
             $analysis = $this->analysisService->generateSimulationAnalysis($input);
 
@@ -145,42 +142,42 @@ class AIRecommendationController extends Controller
                 'period' => $analysis['period'],
                 'comparisonPeriod' => null,
                 'isSimulation' => true,
-                
+
                 // Financial data
                 'current' => $analysis['current'],
                 'previous' => null,
                 'expenseRatio' => $analysis['expense_ratio'],
                 'timeRatio' => $analysis['time_ratio'],
-                
+
                 // Saldo total tidak ada di simulasi
                 'totalBalance' => null,
                 'totalBalanceNote' => 'Mode simulasi tidak menampilkan saldo total.',
-                
+
                 // Legacy vars
                 'totalExpense' => $analysis['current']['total_expense'],
                 'totalIncome' => $analysis['current']['total_income'],
-                
+
                 // Daily patterns & recommendations
                 'dailyPatterns' => $analysis['daily_patterns'],
                 'dailyRecommendation' => $analysis['daily_recommendation'],
-                
+
                 // Analysis results
                 'trend' => $analysis['trend'],
                 'composition' => $analysis['composition'],
                 'patterns' => $analysis['patterns'],
                 'insights' => $analysis['insights'],
                 'warnings' => $analysis['warnings'],
-                
+
                 // Health score
                 'healthScore' => $analysis['health_score'],
-                
+
                 // Categories (kosong di simulasi)
                 'topCategories' => [],
-                
+
                 // Full analysis
                 'walletSetting' => null,
                 'analysis' => $analysis,
-                
+
                 // Simulation input (untuk re-populate form)
                 'simulationInput' => $input,
             ]);

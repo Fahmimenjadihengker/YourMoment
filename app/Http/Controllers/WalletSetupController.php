@@ -38,7 +38,7 @@ class WalletSetupController extends Controller
         ]);
 
         $user = auth()->user();
-        
+
         // Cek apakah wallet sudah dikonfigurasi (untuk mencegah double submit)
         if ($user->walletSetting && $this->isWalletConfigured($user->walletSetting)) {
             return redirect()->route('dashboard');
