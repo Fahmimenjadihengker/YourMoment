@@ -37,8 +37,10 @@ class DashboardController extends Controller
 
     /**
      * Display the dashboard
+     * 
+     * Supports period switching: 'weekly' or 'monthly' (default)
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
 
@@ -56,16 +58,34 @@ class DashboardController extends Controller
             ]);
         }
 
-        // Get current month
+        // === TIME PERIOD SELECTION ===
+        $periodMode = $request->query('period', 'monthly'); // 'weekly' or 'monthly'
         $now = Carbon::now();
+        
+        // Determine date range based on period mode
+        if ($periodMode === 'weekly') {
+            // Minggu ini: Senin - Hari ini
+            $startDate = $now->copy()->startOfWeek(Carbon::MONDAY);
+            $endDate = $now->copy()->endOfDay();
+            $periodLabel = 'Minggu Ini';
+            $periodDetail = $startDate->format('d M') . ' - ' . $endDate->format('d M Y');
+        } else {
+            // Bulan ini (default)
+            $startDate = $now->copy()->startOfMonth();
+            $endDate = $now->copy()->endOfMonth();
+            $periodLabel = $now->translatedFormat('F Y');
+            $periodDetail = 'Bulan ' . $periodLabel;
+            $periodMode = 'monthly'; // Ensure valid value
+        }
+
         $currentPeriod = $now->format('Y-m');
 
         // === SINGLE SOURCE OF TRUTH: Use FinancialSummaryService ===
-        $monthlySummary = $this->financialService->getSummary($user->id);
+        $periodSummary = $this->financialService->getSummary($user->id, $startDate, $endDate);
         $totalBalance = $this->financialService->getTotalBalance($user->id);
 
-        $totalIncome = $monthlySummary['total_income'];
-        $totalExpense = $monthlySummary['total_expense'];
+        $totalIncome = $periodSummary['total_income'];
+        $totalExpense = $periodSummary['total_expense'];
 
         // Update wallet balance to stay in sync (untuk kompatibilitas)
         if (abs($walletSetting->balance - $totalBalance) > 0.01) {
@@ -77,12 +97,13 @@ class DashboardController extends Controller
         $recentTransactions = Transaction::forUser($user->id)
             ->with('category')
             ->orderBy('transaction_date', 'desc')
+            ->orderBy('transaction_time', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
 
-        // === OPTIMIZED: Get insight & health dengan cache + fallback ===
-        $insightData = $this->getOrGenerateInsight($user->id, $currentPeriod);
+        // === Generate insight & health score berdasarkan period yang dipilih ===
+        $insightData = $this->generateInsightForPeriod($user->id, $startDate, $endDate, $periodMode);
 
         return view('dashboard', [
             'walletSetting' => $walletSetting,
@@ -90,85 +111,75 @@ class DashboardController extends Controller
             'totalIncome' => $totalIncome,
             'totalExpense' => $totalExpense,
             'recentTransactions' => $recentTransactions,
-            'currentMonth' => $now->format('F Y'),
+            'currentMonth' => $periodLabel,
+            'periodMode' => $periodMode,
+            'periodDetail' => $periodDetail,
             'financialInsight' => $insightData['insight'],
             'healthScore' => $insightData['health'],
         ]);
     }
 
     /**
-     * Get existing insight dari database atau cache, 
-     * atau generate baru jika belum ada
+     * Generate insight dan health score untuk periode tertentu (weekly/monthly)
+     * Selalu menggunakan data terbaru dari FinancialSummaryService
+     * 
+     * @param int $userId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param string $periodMode 'weekly' or 'monthly'
+     * @return array
      */
-    private function getOrGenerateInsight(int $userId, string $period): array
+    private function generateInsightForPeriod(int $userId, Carbon $startDate, Carbon $endDate, string $periodMode): array
     {
-        // === STEP 1: Check cache dulu (fastest) ===
-        $cachedInsight = $this->cacheService->getInsight($userId, $period);
-        $cachedHealth = $this->cacheService->getHealth($userId, $period);
-        
-        if ($cachedInsight && $cachedHealth) {
-            return [
-                'insight' => $cachedInsight,
-                'health' => $cachedHealth,
-            ];
-        }
-
-        // === STEP 2: Check database (fallback to database if cache miss) ===
-        $existingInsight = FinancialInsight::forUser($userId)
-            ->forPeriod($period)
-            ->first();
-
-        if ($existingInsight) {
-            // Return dari database dan update cache
-            $insightData = [
-                'text' => $existingInsight->summary_text,
-                'source' => $existingInsight->source,
-                'is_cached' => false,
-            ];
-            
-            $healthData = [
-                'score' => $existingInsight->health_score ?? 0,
-                'label' => $existingInsight->health_label ?? 'Tidak Diketahui',
-                'color' => $this->getColorForLabel($existingInsight->health_label),
-                'is_cached' => false,
-            ];
-
-            // Cache untuk akses berikutnya
-            $this->cacheService->putInsight($userId, $period, $insightData);
-            $this->cacheService->putHealth($userId, $period, $healthData);
-
-            return [
-                'insight' => $insightData,
-                'health' => $healthData,
-            ];
-        }
-
-        // === STEP 3: Generate insight baru (calculate once) ===
         try {
-            // Step 3a: Agregasi data keuangan SEKALI
-            $summary = $this->insightService->generateSummary($userId, $period);
+            // Build cache key berdasarkan period range
+            $cacheKey = $startDate->format('Y-m-d') . '_' . $endDate->format('Y-m-d');
+            
+            // === STEP 1: Get fresh data dari FinancialSummaryService (always) ===
+            $summary = $this->financialService->getSummary($userId, $startDate, $endDate);
+            
+            // Get top expense categories untuk insight
+            $topCategories = $this->financialService->getTopExpenseCategories($userId, $startDate, $endDate, 3);
+            
+            // Prepare summary dengan format yang dibutuhkan InsightService/HealthService
+            $summaryForHealth = [
+                'total_income' => $summary['total_income'],
+                'total_expense' => $summary['total_expense'],
+                'saving_ratio' => $summary['total_income'] > 0 
+                    ? round((($summary['total_income'] - $summary['total_expense']) / $summary['total_income']) * 100, 1)
+                    : 0,
+                'top_category_name' => $topCategories->first()?->name ?? 'Tidak ada',
+                'top_category_percent' => $summary['total_expense'] > 0 && $topCategories->first()
+                    ? round(($topCategories->first()->total / $summary['total_expense']) * 100, 1)
+                    : 0,
+                'period' => $startDate->format('Y-m'),
+                'period_label' => $periodMode === 'weekly' 
+                    ? 'Minggu ini (' . $startDate->format('d M') . ' - ' . $endDate->format('d M') . ')'
+                    : $startDate->translatedFormat('F Y'),
+            ];
 
-            // Step 3b: Generate insight via AI (dengan fallback otomatis)
-            $aiResult = $this->aiService->generateInsight($summary);
+            // === STEP 2: Calculate health score dengan formula baru ===
+            $healthResult = $this->healthService->calculateScore($summaryForHealth, $userId);
 
-            // Step 3c: Calculate health score DENGAN summary yang sama
-            $healthResult = $this->healthService->calculateScore($summary, $userId);
+            // === STEP 3: Generate insight yang selaras dengan health score ===
+            // Gunakan AI jika tersedia, atau fallback yang data-driven
+            $insightText = $this->healthService->generateInsightFromScore($healthResult, $summaryForHealth);
+            
+            // Try AI for better insight (optional, with fallback)
+            try {
+                if (!empty(config('services.openai.api_key'))) {
+                    $aiResult = $this->aiService->generateInsight($summaryForHealth);
+                    if ($aiResult['success'] && $aiResult['source'] === 'ai') {
+                        $insightText = $aiResult['insight'];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Keep using health-based insight
+            }
 
-            // Step 3d: Simpan ke database
-            FinancialInsight::create([
-                'user_id' => $userId,
-                'period' => $period,
-                'summary_text' => $aiResult['insight'],
-                'source' => $aiResult['source'],
-                'summary_data' => $summary,
-                'health_score' => $healthResult['score'],
-                'health_label' => $healthResult['label'],
-            ]);
-
-            // Step 3e: Cache untuk akses berikutnya
             $insightData = [
-                'text' => $aiResult['insight'],
-                'source' => $aiResult['source'],
+                'text' => $insightText,
+                'source' => 'data',
                 'is_cached' => false,
             ];
             
@@ -176,12 +187,9 @@ class DashboardController extends Controller
                 'score' => $healthResult['score'],
                 'label' => $healthResult['label'],
                 'color' => $healthResult['color'],
-                'breakdown' => $healthResult['breakdown'],
+                'breakdown' => $healthResult['breakdown'] ?? [],
                 'is_cached' => false,
             ];
-
-            $this->cacheService->putInsight($userId, $period, $insightData);
-            $this->cacheService->putHealth($userId, $period, $healthData);
 
             return [
                 'insight' => $insightData,
@@ -190,24 +198,38 @@ class DashboardController extends Controller
 
         } catch (\Exception $e) {
             // Fallback jika terjadi error
-            $insightData = [
-                'text' => 'Insight keuangan sedang diproses. Silakan refresh halaman dalam beberapa saat.',
-                'source' => 'error',
-                'is_cached' => false,
-            ];
-            
-            $healthData = [
-                'score' => 0,
-                'label' => 'Tidak Diketahui',
-                'color' => 'gray',
-                'is_cached' => false,
-            ];
-
             return [
-                'insight' => $insightData,
-                'health' => $healthData,
+                'insight' => [
+                    'text' => 'Insight keuangan sedang diproses. Data akan tersedia setelah ada transaksi tercatat.',
+                    'source' => 'error',
+                    'is_cached' => false,
+                ],
+                'health' => [
+                    'score' => 50,
+                    'label' => 'Belum Ada Data',
+                    'color' => 'gray',
+                    'is_cached' => false,
+                ],
             ];
         }
+    }
+
+    /**
+     * Get existing insight dari database atau cache, 
+     * atau generate baru jika belum ada
+     * 
+     * @deprecated Use generateInsightForPeriod instead for real-time data
+     */
+    private function getOrGenerateInsight(int $userId, string $period): array
+    {
+        // Redirect ke method baru dengan monthly period
+        $now = Carbon::now();
+        return $this->generateInsightForPeriod(
+            $userId, 
+            $now->copy()->startOfMonth(), 
+            $now->copy()->endOfMonth(),
+            'monthly'
+        );
     }
 
     /**
@@ -216,10 +238,10 @@ class DashboardController extends Controller
     private function getColorForLabel(?string $label): string
     {
         return match ($label) {
-            'Sehat' => 'green',
-            'Cukup Sehat' => 'yellow',
-            'Kurang Sehat' => 'orange',
-            'Tidak Sehat' => 'red',
+            'Sangat Baik', 'Baik' => 'green',
+            'Cukup' => 'yellow',
+            'Kurang Baik' => 'orange',
+            'Buruk' => 'red',
             default => 'gray',
         };
     }

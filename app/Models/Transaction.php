@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,6 +15,7 @@ class Transaction extends Model
         'amount',
         'description',
         'transaction_date',
+        'transaction_time',
         'payment_method',
     ];
 
@@ -21,6 +23,42 @@ class Transaction extends Model
         'amount' => 'decimal:2',
         'transaction_date' => 'date',
     ];
+
+    /**
+     * Get the full datetime of transaction (date + time combined)
+     * 
+     * @return Carbon
+     */
+    public function getTransactionAtAttribute(): Carbon
+    {
+        $date = $this->transaction_date instanceof Carbon 
+            ? $this->transaction_date->format('Y-m-d') 
+            : $this->transaction_date;
+        
+        $time = $this->transaction_time ?? '00:00:00';
+        
+        return Carbon::parse("{$date} {$time}");
+    }
+
+    /**
+     * Get formatted transaction datetime for display
+     * 
+     * @return string
+     */
+    public function getFormattedDatetimeAttribute(): string
+    {
+        return $this->transaction_at->translatedFormat('d M Y, H:i');
+    }
+
+    /**
+     * Get short formatted date for mobile display
+     * 
+     * @return string
+     */
+    public function getShortDatetimeAttribute(): string
+    {
+        return $this->transaction_at->translatedFormat('d M, H:i');
+    }
 
     /**
      * Get the user that owns this transaction
@@ -68,6 +106,17 @@ class Transaction extends Model
     public function scopeDateRange($query, $startDate, $endDate)
     {
         return $query->whereBetween('transaction_date', [$startDate, $endDate]);
+    }
+
+    /**
+     * Scope untuk filter by category
+     */
+    public function scopeForCategory($query, $categoryId)
+    {
+        if ($categoryId) {
+            return $query->where('category_id', $categoryId);
+        }
+        return $query;
     }
 
     /**

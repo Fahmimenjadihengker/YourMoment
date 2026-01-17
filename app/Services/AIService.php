@@ -135,6 +135,7 @@ Buatkan 1 insight utama.";
 
     /**
      * Build teks fallback berdasarkan kondisi keuangan
+     * Profesional, data-driven, tanpa emoji
      */
     private function buildFallbackText(array $summary): string
     {
@@ -144,34 +145,58 @@ Buatkan 1 insight utama.";
         $topCategory = $summary['top_category_name'];
         $topPercent = $summary['top_category_percent'];
 
+        // Format angka
+        $incomeFormatted = number_format($income, 0, ',', '.');
+        $expenseFormatted = number_format($expense, 0, ',', '.');
+
         // Tidak ada transaksi
         if ($income == 0 && $expense == 0) {
-            return "Belum ada catatan transaksi bulan ini. Yuk mulai catat pemasukan dan pengeluaranmu untuk mendapat insight yang lebih akurat! 📝";
+            return "Belum ada transaksi tercatat untuk periode ini. Mulai catat pemasukan dan pengeluaranmu untuk mendapatkan analisis keuangan yang akurat.";
+        }
+
+        // Hanya ada pengeluaran, tidak ada pemasukan
+        if ($income == 0 && $expense > 0) {
+            return "Tercatat pengeluaran Rp{$expenseFormatted} namun belum ada pemasukan. Pastikan untuk mencatat semua sumber pemasukanmu agar analisis lebih lengkap.";
         }
 
         // Defisit (pengeluaran > pemasukan)
         if ($expense > $income) {
             $deficit = $expense - $income;
             $deficitFormatted = number_format($deficit, 0, ',', '.');
-            return "Pengeluaran bulan ini lebih besar dari pemasukan (defisit Rp{$deficitFormatted}). Coba kurangi pengeluaran di kategori {$topCategory} yang mengambil {$topPercent}% dari total pengeluaranmu. Semangat mengatur keuangan! 💪";
+            $deficitPercent = $income > 0 ? round((($expense - $income) / $income) * 100) : 100;
+            
+            if ($deficitPercent > 50) {
+                return "Pengeluaran (Rp{$expenseFormatted}) melebihi pemasukan dengan defisit Rp{$deficitFormatted}. Prioritaskan untuk mengurangi pengeluaran di kategori {$topCategory} yang mengambil {$topPercent}% dari total pengeluaran.";
+            }
+            return "Terjadi defisit Rp{$deficitFormatted} periode ini. Kategori {$topCategory} ({$topPercent}%) bisa menjadi fokus penghematan untuk menyeimbangkan keuangan.";
         }
 
-        // Surplus tapi rasio tabungan rendah (< 10%)
-        if ($savingRatio < 10 && $savingRatio >= 0) {
-            return "Keuanganmu bulan ini cukup terkontrol, tapi rasio tabungan masih {$savingRatio}%. Coba sisihkan sedikit lebih banyak untuk tabungan ya! Pengeluaran terbesar di {$topCategory} ({$topPercent}%). 🎯";
+        // Surplus tapi rasio tabungan sangat rendah (< 5%)
+        if ($savingRatio < 5 && $savingRatio >= 0) {
+            return "Pengeluaran hampir sama dengan pemasukan (rasio tabungan hanya {$savingRatio}%). Coba alokasikan minimal 10% dari pemasukan untuk tabungan. Kategori {$topCategory} ({$topPercent}%) bisa dievaluasi.";
         }
 
-        // Surplus dengan rasio tabungan sedang (10-30%)
-        if ($savingRatio >= 10 && $savingRatio < 30) {
-            return "Bagus! Kamu berhasil menyisihkan {$savingRatio}% dari pemasukanmu bulan ini. Pengeluaran terbesar ada di {$topCategory}, pastikan tetap sesuai kebutuhan ya! 👍";
+        // Surplus tapi rasio tabungan rendah (5-10%)
+        if ($savingRatio >= 5 && $savingRatio < 10) {
+            return "Keuangan cukup terkontrol dengan rasio tabungan {$savingRatio}%. Untuk kondisi yang lebih sehat, targetkan rasio tabungan 10-20%. Pengeluaran terbesar di {$topCategory} ({$topPercent}%).";
+        }
+
+        // Surplus dengan rasio tabungan sedang (10-20%)
+        if ($savingRatio >= 10 && $savingRatio < 20) {
+            return "Keuangan dalam kondisi baik dengan rasio tabungan {$savingRatio}%. Pengeluaran terbesar di kategori {$topCategory} ({$topPercent}%), pastikan sesuai prioritas kebutuhanmu.";
+        }
+
+        // Surplus dengan rasio tabungan baik (20-30%)
+        if ($savingRatio >= 20 && $savingRatio < 30) {
+            return "Pengelolaan keuangan sangat baik dengan rasio tabungan {$savingRatio}%. Pertahankan pola ini dan pertimbangkan untuk mengalokasikan tabungan ke tujuan finansial jangka panjang.";
         }
 
         // Surplus dengan rasio tabungan tinggi (>= 30%)
         if ($savingRatio >= 30) {
-            return "Luar biasa! Rasio tabunganmu bulan ini {$savingRatio}%, sangat baik untuk kondisi keuangan jangka panjang. Pertahankan pola pengeluaran yang sudah bagus ini! 🌟";
+            return "Kondisi keuangan sangat sehat dengan rasio tabungan {$savingRatio}%. Pola pengeluaran sudah efisien dengan pos terbesar di {$topCategory} ({$topPercent}%). Pertahankan konsistensi ini.";
         }
 
         // Default fallback
-        return "Keuanganmu bulan ini tercatat dengan baik. Terus pantau pengeluaran di kategori {$topCategory} yang menjadi pos terbesar ({$topPercent}%). Semangat mengelola keuangan! 💰";
+        return "Keuangan periode ini tercatat dengan total pemasukan Rp{$incomeFormatted} dan pengeluaran Rp{$expenseFormatted}. Kategori {$topCategory} menjadi pos pengeluaran terbesar ({$topPercent}%).";
     }
 }

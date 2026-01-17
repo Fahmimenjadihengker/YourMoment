@@ -18,9 +18,10 @@
                     <span class="text-3xl mr-3">{{ $goal->icon }}</span>
                     {{ $goal->name }}
                 </h1>
-                <p class="text-gray-600 dark:text-gray-400 mt-1">
+                <p class="text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
                     @if($goal->status === 'completed')
-                        🎉 Target tercapai!
+                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Target tercapai!
                     @else
                         {{ $goal->progress }}% tercapai
                     @endif
@@ -29,20 +30,36 @@
         </div>
         <div class="flex items-center space-x-2">
             @if($goal->status === 'completed')
-                <span class="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-sm font-medium">
-                    ✅ Tercapai
+                <span class="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-sm font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Tercapai
                 </span>
             @elseif($goal->is_overdue)
-                <span class="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm font-medium">
-                    ⚠️ Lewat deadline
+                <span class="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Lewat deadline
                 </span>
             @endif
-            <form action="{{ route('savings.destroy', $goal) }}" method="POST" 
-                  onsubmit="return confirm('Yakin mau hapus target ini? Data tidak bisa dikembalikan.')">
+            
+            {{-- Edit Button --}}
+            @if($goal->status === 'active')
+                <a href="{{ route('savings.edit', $goal) }}" 
+                   class="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                   title="Edit Target">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </a>
+            @endif
+
+            {{-- Delete Button --}}
+            <form id="delete-goal-form" action="{{ route('savings.destroy', $goal) }}" method="POST">
                 @csrf
                 @method('DELETE')
-                <button type="submit" 
-                        class="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
+                <button type="button" 
+                        onclick="confirmDeleteGoal()"
+                        class="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                        title="Hapus Target">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
@@ -107,8 +124,8 @@
             @if($recommendation)
                 <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-5 border border-indigo-200 dark:border-indigo-800">
                     <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl flex-shrink-0">
-                            🤖
+                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
                         </div>
                         <div>
                             <h3 class="font-semibold text-indigo-800 dark:text-indigo-300 mb-1">Tips dari AI</h3>
@@ -124,7 +141,8 @@
             @if($goal->deadline && $goal->status === 'active' && !$goal->is_overdue)
                 <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                     <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <span class="text-xl mr-2">🧮</span> Kalkulator Nabung
+                        <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        Kalkulator Nabung
                     </h3>
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         @if($goal->daily_saving_needed)
@@ -159,7 +177,8 @@
             @if($contributions->isNotEmpty())
                 <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                     <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <span class="text-xl mr-2">📜</span> Riwayat Kontribusi
+                        <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Riwayat Kontribusi
                     </h3>
                     
                     {{-- Desktop Table --}}
@@ -218,7 +237,8 @@
             @if($goal->status === 'active')
                 <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                     <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <span class="text-xl mr-2">💰</span> Tambah Dana
+                        <svg class="w-5 h-5 mr-2 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        Tambah Dana
                     </h3>
                     
                     <form action="{{ route('savings.add-funds', $goal) }}" method="POST" class="space-y-4">
@@ -295,7 +315,10 @@
 
             {{-- Ask AI --}}
             <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white">
-                <h4 class="font-semibold mb-2">🤖 Tanya AI</h4>
+                <h4 class="font-semibold mb-2 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                    Tanya AI
+                </h4>
                 <p class="text-sm text-white/80 mb-4">Butuh tips untuk mencapai target ini lebih cepat?</p>
                 <a href="{{ route('ai.chat') }}?q=Tips%20untuk%20target%20{{ urlencode($goal->name) }}" 
                    class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
@@ -308,4 +331,16 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function confirmDeleteGoal() {
+    window.confirmDelete('Hapus target ini?', 'Data target dan riwayat kontribusi akan dihapus permanen.').then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('delete-goal-form').submit();
+        }
+    });
+}
+</script>
+@endpush
 @endsection

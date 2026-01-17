@@ -94,6 +94,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('store');
         Route::get('/{goal}', [SavingGoalController::class, 'show'])
             ->name('show');
+        Route::get('/{goal}/edit', [SavingGoalController::class, 'edit'])
+            ->name('edit');
+        Route::put('/{goal}', [SavingGoalController::class, 'update'])
+            ->name('update');
         Route::post('/{goal}/add-funds', [SavingGoalController::class, 'addFunds'])
             ->name('add-funds');
         Route::post('/{goal}/cancel', [SavingGoalController::class, 'cancel'])
@@ -115,6 +119,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Legacy AI recommendation route
     Route::get('/ai-recommendation', [AIRecommendationController::class, 'index'])
         ->name('ai-recommendation');
+    
+    Route::post('/ai-recommendation/simulate', [AIRecommendationController::class, 'simulate'])
+        ->name('ai-recommendation.simulate');
 
     // --------------------------------------------------------
     // PROFILE MANAGEMENT (Tab 5: Profil)

@@ -14,7 +14,11 @@
         </a>
         <div>
             <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-                <span class="text-3xl mr-3">{{ $transaction->type === 'income' ? '📥' : '📤' }}</span>
+                @if($transaction->type === 'income')
+                <svg class="w-8 h-8 mr-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                @else
+                <svg class="w-8 h-8 mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                @endif
                 Edit {{ $transaction->type === 'income' ? 'Pemasukan' : 'Pengeluaran' }}
             </h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">Perbaiki data transaksimu</p>
@@ -42,7 +46,8 @@
                     {{-- Category --}}
                     <div>
                         <label for="category_id" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                            <span class="text-lg">📂</span> Kategori <span class="text-red-500">*</span>
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                            Kategori <span class="text-red-500">*</span>
                         </label>
                         <select id="category_id" name="category_id"
                                 class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 {{ $transaction->type === 'income' ? 'focus:ring-emerald-500 focus:border-emerald-500' : 'focus:ring-red-500 focus:border-red-500' }} transition @error('category_id') border-red-500 @enderror"
@@ -64,7 +69,8 @@
                         ? 'bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-800 border-emerald-200 dark:border-emerald-800' 
                         : 'bg-gradient-to-br from-red-50 to-white dark:from-red-900/20 dark:to-gray-800 border-red-200 dark:border-red-800' }}">
                         <label for="amount" class="block text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <span class="text-xl">💰</span> Jumlah <span class="text-red-500">*</span>
+                            <svg class="w-5 h-5 {{ $transaction->type === 'income' ? 'text-emerald-500' : 'text-red-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Jumlah <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 dark:text-gray-300 font-bold text-xl">Rp</span>
@@ -81,11 +87,12 @@
                         @enderror
                     </div>
 
-                    {{-- Date & Payment Grid --}}
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {{-- Date, Time & Payment Grid --}}
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div>
                             <label for="transaction_date" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                <span>📅</span> Tanggal <span class="text-red-500">*</span>
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                Tanggal <span class="text-red-500">*</span>
                             </label>
                             <input type="date" id="transaction_date" name="transaction_date"
                                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition @error('transaction_date') border-red-500 @enderror"
@@ -97,8 +104,22 @@
                         </div>
 
                         <div>
+                            <label for="transaction_time" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Waktu
+                            </label>
+                            <input type="time" id="transaction_time" name="transaction_time"
+                                   class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition @error('transaction_time') border-red-500 @enderror"
+                                   value="{{ old('transaction_time', $transaction->transaction_time ? \Carbon\Carbon::parse($transaction->transaction_time)->format('H:i') : '') }}">
+                            @error('transaction_time')
+                            <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
                             <label for="payment_method" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                <span>💳</span> Metode Pembayaran
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                Metode Pembayaran
                             </label>
                             <input type="text" id="payment_method" name="payment_method"
                                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition"
@@ -110,7 +131,8 @@
                     {{-- Description --}}
                     <div>
                         <label for="description" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                            <span>📝</span> Catatan Tambahan
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Catatan Tambahan
                         </label>
                         <input type="text" id="description" name="description"
                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition"
@@ -140,17 +162,19 @@
             {{-- Delete Section --}}
             <div class="mt-6 bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                 <h3 class="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                    <span>⚠️</span> Zona Berbahaya
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Zona Berbahaya
                 </h3>
                 <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">Menghapus transaksi ini akan mempengaruhi balance walletmu.</p>
 
-                <form action="{{ route('transactions.destroy', $transaction) }}" method="POST"
-                      onsubmit="return confirm('Yakin ingin menghapus transaksi ini? Balance akan di-update otomatis.');">
+                <form id="delete-transaction-form" action="{{ route('transactions.destroy', $transaction) }}" method="POST">
                     @csrf
                     @method('DELETE')
-                    <button type="submit"
-                            class="px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-semibold hover:bg-red-200 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800">
-                        🗑️ Hapus Transaksi
+                    <button type="button"
+                            onclick="confirmDeleteTransaction()"
+                            class="px-6 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-semibold hover:bg-red-200 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-800 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Hapus Transaksi
                     </button>
                 </form>
             </div>
@@ -180,7 +204,7 @@
 
             <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6">
                 <h4 class="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2 flex items-center">
-                    <span class="text-lg mr-2">💡</span>
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                     Perhatian
                 </h4>
                 <p class="text-sm text-amber-700 dark:text-amber-400">
@@ -190,4 +214,16 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function confirmDeleteTransaction() {
+    window.confirmDelete('Hapus transaksi ini?', 'Balance wallet akan diperbarui secara otomatis.').then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('delete-transaction-form').submit();
+        }
+    });
+}
+</script>
+@endpush
 @endsection

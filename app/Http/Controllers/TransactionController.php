@@ -45,10 +45,18 @@ class TransactionController extends Controller
             'amount' => 'required|numeric|min:1',
             'description' => 'nullable|string|max:255',
             'transaction_date' => 'required|date',
+            'transaction_time' => 'nullable|date_format:H:i',
             'payment_method' => 'nullable|string|max:50',
         ]);
 
         $validated['user_id'] = auth()->id();
+        
+        // Set transaction_time to now if not provided
+        if (empty($validated['transaction_time'])) {
+            $validated['transaction_time'] = Carbon::now()->format('H:i:s');
+        } else {
+            $validated['transaction_time'] = $validated['transaction_time'] . ':00';
+        }
 
         // === OPTIMIZED: Single wallet update ===
         $wallet = auth()->user()->walletSetting;
@@ -76,34 +84,69 @@ class TransactionController extends Controller
 
         // Determine redirect
         $type = $validated['type'];
-        $message = ucfirst($type) . ' recorded successfully!';
+        $message = $type === 'income' ? 'Pemasukan berhasil ditambahkan' : 'Pengeluaran berhasil ditambahkan';
 
         return redirect()->route('transactions.index')
-            ->with('success', $message);
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Berhasil',
+                'text' => $message
+            ]);
     }
 
     /**
-     * Display all transactions
+     * Display all transactions with filters
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
-        $filterType = request('type'); // income or expense
+        
+        // Get filter parameters
+        $filterType = $request->query('type'); // income or expense
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $categoryId = $request->query('category_id');
 
         $query = Transaction::forUser($user->id)
             ->with('category')
             ->orderBy('transaction_date', 'desc')
+            ->orderBy('transaction_time', 'desc')
             ->orderBy('created_at', 'desc');
 
+        // Apply type filter
         if ($filterType && in_array($filterType, ['income', 'expense'])) {
             $query->where('type', $filterType);
         }
 
-        $transactions = $query->paginate(15);
+        // Apply date range filter
+        if ($startDate) {
+            $query->where('transaction_date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->where('transaction_date', '<=', $endDate);
+        }
+
+        // Apply category filter
+        if ($categoryId) {
+            $query->forCategory($categoryId);
+        }
+
+        $transactions = $query->paginate(15)->withQueryString();
+
+        // Get all categories for filter dropdown
+        $categories = Category::orderBy('name')->get();
+
+        // Check if any filter is active
+        $hasActiveFilter = $filterType || $startDate || $endDate || $categoryId;
 
         return view('transactions.index', [
             'transactions' => $transactions,
             'filterType' => $filterType,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'categoryId' => $categoryId,
+            'categories' => $categories,
+            'hasActiveFilter' => $hasActiveFilter,
         ]);
     }
 
@@ -140,8 +183,17 @@ class TransactionController extends Controller
             'amount' => 'required|numeric|min:1',
             'description' => 'nullable|string|max:255',
             'transaction_date' => 'required|date',
+            'transaction_time' => 'nullable|date_format:H:i',
             'payment_method' => 'nullable|string|max:50',
         ]);
+
+        // Handle transaction_time
+        if (isset($validated['transaction_time']) && !empty($validated['transaction_time'])) {
+            $validated['transaction_time'] = $validated['transaction_time'] . ':00';
+        } elseif (!isset($validated['transaction_time'])) {
+            // Keep existing time if not provided
+            unset($validated['transaction_time']);
+        }
 
         $wallet = auth()->user()->walletSetting;
         
@@ -182,10 +234,14 @@ class TransactionController extends Controller
         }
 
         $type = $transaction->type;
-        $message = ucfirst($type) . ' updated successfully!';
+        $message = 'Transaksi berhasil diperbarui';
 
         return redirect()->route('transactions.index')
-            ->with('success', $message);
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Berhasil',
+                'text' => $message
+            ]);
     }
 
     /**
@@ -219,9 +275,13 @@ class TransactionController extends Controller
         $type = $transaction->type;
         $transaction->delete();
 
-        $message = ucfirst($type) . ' deleted successfully!';
+        $message = 'Transaksi berhasil dihapus';
 
         return redirect()->route('transactions.index')
-            ->with('success', $message);
+            ->with('swal', [
+                'type' => 'success',
+                'title' => 'Berhasil dihapus',
+                'text' => $message
+            ]);
     }
 }

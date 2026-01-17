@@ -14,7 +14,7 @@
         </a>
         <div>
             <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-                <span class="text-3xl mr-3">📥</span>
+                <svg class="w-8 h-8 mr-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
                 Terima Uang
             </h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">Catat sumber penghasilan atau bonus kamu</p>
@@ -40,7 +40,8 @@
                     {{-- Category --}}
                     <div>
                         <label for="category_id" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                            <span class="text-lg">📂</span> Kategori Sumber Uang <span class="text-red-500">*</span>
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                            Kategori Sumber Uang <span class="text-red-500">*</span>
                         </label>
                         <select id="category_id" name="category_id" 
                                 class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('category_id') border-red-500 @enderror" 
@@ -60,7 +61,8 @@
                     {{-- Amount --}}
                     <div class="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-800 rounded-xl p-5 border border-emerald-200 dark:border-emerald-800">
                         <label for="amount" class="block text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <span class="text-xl">💰</span> Berapa Jumlahnya? <span class="text-red-500">*</span>
+                            <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Berapa Jumlahnya? <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 dark:text-gray-300 font-bold text-xl">Rp</span>
@@ -77,11 +79,12 @@
                         @enderror
                     </div>
 
-                    {{-- Date & Payment Grid --}}
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {{-- Date, Time & Payment Grid --}}
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <div>
                             <label for="transaction_date" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                <span>📅</span> Tanggal <span class="text-red-500">*</span>
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                Tanggal <span class="text-red-500">*</span>
                             </label>
                             <input type="date" id="transaction_date" name="transaction_date"
                                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('transaction_date') border-red-500 @enderror"
@@ -92,9 +95,24 @@
                             @enderror
                         </div>
 
+                        <div x-data="{ timeValue: '{{ old('transaction_time') }}' }" x-init="if (!timeValue) { const now = new Date(); timeValue = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0'); }">
+                            <label for="transaction_time" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Waktu
+                            </label>
+                            <input type="time" id="transaction_time" name="transaction_time"
+                                   class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('transaction_time') border-red-500 @enderror"
+                                   x-model="timeValue">
+                            @error('transaction_time')
+                            <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                            @enderror
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Waktu otomatis terisi sesuai jam device</p>
+                        </div>
+
                         <div>
                             <label for="payment_method" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                <span>💳</span> Metode Pembayaran
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                Metode Pembayaran
                             </label>
                             <input type="text" id="payment_method" name="payment_method"
                                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
@@ -106,7 +124,8 @@
                     {{-- Description --}}
                     <div>
                         <label for="description" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                            <span>📝</span> Catatan Tambahan
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Catatan Tambahan
                         </label>
                         <input type="text" id="description" name="description"
                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
@@ -136,7 +155,7 @@
         <div class="space-y-6">
             <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-lg">
                 <div class="flex items-start gap-3">
-                    <span class="text-3xl">💡</span>
+                    <svg class="w-8 h-8 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                     <div>
                         <p class="font-bold text-lg mb-2">Semakin Teliti!</p>
                         <p class="text-emerald-100 text-sm">Catat setiap uang yang masuk dengan detail untuk analisis sumber penghasilan terbesar.</p>
@@ -146,7 +165,7 @@
 
             <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                 <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                    <span class="text-lg mr-2">📈</span>
+                    <svg class="w-5 h-5 mr-2 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
                     Tips Pemasukan
                 </h4>
                 <ul class="space-y-3 text-sm text-gray-600 dark:text-gray-400">

@@ -1,7 +1,7 @@
 <section>
     <header>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-            <span class="mr-2">👤</span>
+            <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
             {{ __('Informasi Profil') }}
         </h2>
 
@@ -58,7 +58,10 @@
 
             @if (session('status') === 'profile-updated')
                 <p x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 2000)"
-                   class="text-sm text-emerald-600 dark:text-emerald-400 font-medium">✓ Tersimpan</p>
+                   class="text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Tersimpan
+                </p>
             @endif
         </div>
     </form>

@@ -11,7 +11,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                        <span class="text-xl lg:text-2xl">🤖</span>
+                        <svg class="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
                     </div>
                     <div>
                         <h1 class="text-lg lg:text-xl font-bold text-gray-900 dark:text-white">YourMoment AI</h1>
@@ -48,9 +48,9 @@
                         {{-- AI Welcome --}}
                         <div class="text-center mb-8">
                             <div class="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
-                                <span class="text-4xl lg:text-5xl">🤖</span>
+                                <svg class="w-10 h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
                             </div>
-                            <h2 class="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2">Halo! Aku YourMoment AI 👋</h2>
+                            <h2 class="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2">Halo! Aku YourMoment AI</h2>
                             <p class="text-gray-600 dark:text-gray-400">Financial assistant pribadimu. Tanya apapun tentang keuanganmu!</p>
                         </div>
 
@@ -59,7 +59,7 @@
                             <button @click="sendQuickMessage('Berapa saldo saya sekarang?')" 
                                     class="group p-4 lg:p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-lg transition-all text-left">
                                 <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                    <span class="text-xl">💰</span>
+                                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                                 </div>
                                 <span class="text-sm font-medium text-gray-900 dark:text-white block">Cek Saldo</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">Lihat saldo terkini</span>
@@ -67,7 +67,7 @@
                             <button @click="sendQuickMessage('Analisis pengeluaran saya bulan ini')" 
                                     class="group p-4 lg:p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-lg transition-all text-left">
                                 <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                    <span class="text-xl">📊</span>
+                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                                 </div>
                                 <span class="text-sm font-medium text-gray-900 dark:text-white block">Analisis Spending</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">Breakdown pengeluaran</span>
@@ -75,7 +75,7 @@
                             <button @click="sendQuickMessage('Bagaimana progress target tabungan saya?')" 
                                     class="group p-4 lg:p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-lg transition-all text-left">
                                 <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                    <span class="text-xl">🎯</span>
+                                    <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
                                 </div>
                                 <span class="text-sm font-medium text-gray-900 dark:text-white block">Target Tabungan</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">Progress goals</span>
@@ -83,7 +83,7 @@
                             <button @click="sendQuickMessage('Kasih tips hemat untuk mahasiswa dong!')" 
                                     class="group p-4 lg:p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-lg transition-all text-left">
                                 <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                    <span class="text-xl">💡</span>
+                                    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                                 </div>
                                 <span class="text-sm font-medium text-gray-900 dark:text-white block">Tips Hemat</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">Saran menabung</span>
@@ -95,16 +95,18 @@
                             <p class="text-sm text-gray-500 dark:text-gray-400 text-center mb-3">Atau coba tanya:</p>
                             <div class="flex flex-wrap justify-center gap-2">
                                 <button @click="sendQuickMessage('Berapa total pengeluaran makanan bulan ini?')" 
-                                        class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                                    💸 Pengeluaran makanan
+                                        class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors inline-flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Pengeluaran makanan
                                 </button>
                                 <button @click="sendQuickMessage('Kapan target tabungan saya tercapai?')" 
                                         class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                                     📅 Prediksi tabungan
                                 </button>
                                 <button @click="sendQuickMessage('Bandingkan pengeluaran bulan ini dengan bulan lalu')" 
-                                        class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                                    📈 Perbandingan bulanan
+                                        class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors inline-flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                                    Perbandingan bulanan
                                 </button>
                             </div>
                         </div>
@@ -127,7 +129,7 @@
                         <template x-if="msg.role === 'assistant'">
                             <div class="max-w-[85%] lg:max-w-[70%] flex space-x-3">
                                 <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                                    <span class="text-sm">🤖</span>
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
@@ -145,7 +147,7 @@
                     <div class="flex justify-start">
                         <div class="flex space-x-3">
                             <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                                <span class="text-sm">🤖</span>
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
                             </div>
                             <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3">
                                 <div class="flex space-x-1.5">
@@ -270,15 +272,15 @@
                 </h3>
                 <div class="space-y-2 text-xs text-gray-600 dark:text-gray-400">
                     <p class="flex items-start">
-                        <span class="mr-2">💡</span>
+                        <svg class="w-4 h-4 mr-2 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                         <span>"Berapa pengeluaran untuk [kategori]?"</span>
                     </p>
                     <p class="flex items-start">
-                        <span class="mr-2">💡</span>
+                        <svg class="w-4 h-4 mr-2 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                         <span>"Bandingkan income vs expense"</span>
                     </p>
                     <p class="flex items-start">
-                        <span class="mr-2">💡</span>
+                        <svg class="w-4 h-4 mr-2 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                         <span>"Tips untuk mencapai target [nama target]"</span>
                     </p>
                 </div>
@@ -357,18 +359,21 @@ function aiChat() {
         },
 
         clearChat() {
-            if (confirm('Hapus semua chat?')) {
-                this.messages = [];
-                fetch('{{ route("ai.send") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ message: '__clear_history__' })
-                });
-            }
+            window.confirmDelete('Hapus semua chat?', 'Riwayat percakapan akan dihapus permanen.').then((result) => {
+                if (result.isConfirmed) {
+                    this.messages = [];
+                    fetch('{{ route("ai.send") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ message: '__clear_history__' })
+                    });
+                    window.showSuccess('Berhasil', 'Chat berhasil dihapus');
+                }
+            });
         },
 
         scrollToBottom() {
