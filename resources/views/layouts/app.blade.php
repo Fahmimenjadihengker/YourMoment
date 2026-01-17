@@ -347,15 +347,15 @@
     <div id="toast-container" 
          x-data="{ toasts: [] }"
          @toast.window="toasts.push({id: Date.now(), message: $event.detail.message, type: $event.detail.type || 'success'}); setTimeout(() => toasts.shift(), 4000)"
-         class="fixed bottom-20 lg:bottom-8 left-4 right-4 lg:left-auto lg:right-8 lg:w-96 z-50 flex flex-col gap-2 pointer-events-none">
+         class="fixed top-4 right-4 lg:right-8 lg:w-96 z-[100] flex flex-col gap-2 pointer-events-none">
         <template x-for="toast in toasts" :key="toast.id">
             <div x-show="true"
                  x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 translate-y-4"
-                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:enter-start="opacity-0 translate-x-8"
+                 x-transition:enter-end="opacity-100 translate-x-0"
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
+                 x-transition:leave-end="opacity-0 translate-x-8"
                  :class="{
                      'bg-emerald-600': toast.type === 'success',
                      'bg-red-600': toast.type === 'error',
@@ -363,14 +363,31 @@
                      'bg-blue-600': toast.type === 'info'
                  }"
                  class="px-4 py-3 rounded-xl text-white text-sm font-medium shadow-lg pointer-events-auto flex items-center gap-3">
+                <!-- Toast Icon -->
+                <template x-if="toast.type === 'success'">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </template>
+                <template x-if="toast.type === 'error'">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </template>
+                <template x-if="toast.type === 'warning'">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </template>
+                <template x-if="toast.type === 'info'">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </template>
                 <span x-text="toast.message"></span>
             </div>
         </template>
     </div>
 
     <script>
-    @RegisterServiceWorkerScript
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/serviceworker.js').catch(err => console.log('SW registration failed'));
+    }
     
+    // Toast Notification Helper
     window.showToast = (message, type = 'success') => {
         window.dispatchEvent(new CustomEvent('toast', { detail: { message, type } }));
     };

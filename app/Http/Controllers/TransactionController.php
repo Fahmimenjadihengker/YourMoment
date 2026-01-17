@@ -76,7 +76,7 @@ class TransactionController extends Controller
 
         // Determine redirect
         $type = $validated['type'];
-        $message = ucfirst($type) . ' recorded successfully!';
+        $message = $type === 'income' ? 'Pemasukan berhasil ditambahkan' : 'Pengeluaran berhasil ditambahkan';
 
         return redirect()->route('transactions.index')
             ->with('success', $message);
@@ -182,7 +182,7 @@ class TransactionController extends Controller
         }
 
         $type = $transaction->type;
-        $message = ucfirst($type) . ' updated successfully!';
+        $message = 'Transaksi berhasil diperbarui';
 
         return redirect()->route('transactions.index')
             ->with('success', $message);
@@ -219,7 +219,7 @@ class TransactionController extends Controller
         $type = $transaction->type;
         $transaction->delete();
 
-        $message = ucfirst($type) . ' deleted successfully!';
+        $message = 'Transaksi berhasil dihapus';
 
         return redirect()->route('transactions.index')
             ->with('success', $message);

@@ -101,7 +101,7 @@ class SavingGoalController extends Controller
         }
 
         return redirect()->route('savings.show', $goal)
-            ->with('success', 'Target tabungan berhasil dibuat! 🎯');
+            ->with('success', 'Target tabungan berhasil dibuat!');
     }
 
     /**
@@ -156,8 +156,8 @@ class SavingGoalController extends Controller
         );
 
         $message = $goal->fresh()->status === 'completed'
-            ? '🎉 Selamat! Target tabungan tercapai!'
-            : '💰 Dana berhasil ditambahkan!';
+            ? 'Selamat! Target tabungan tercapai!'
+            : 'Dana berhasil ditambahkan!';
 
         return back()->with('success', $message);
     }

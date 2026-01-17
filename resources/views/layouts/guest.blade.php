@@ -41,7 +41,10 @@
             </div>
         </div>
         <script>
-        @RegisterServiceWorkerScript
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/serviceworker.js').catch(err => console.log('SW registration failed'));
+        }
         </script>
     </body>
 </html>
